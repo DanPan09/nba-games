@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EBK — NBA Who Am I? | Daily Gauntlet & Infinite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* Self-contained dark theme & layout fallbacks so UI looks sharp even if Tailwind CDN is blocked */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top, #18181b 0%, #09090b 100%) !important;
+      color: #f4f4f5 !important;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Subtle basketball court lines background pattern */
+    .court-bg {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.14) 0%, transparent 60%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    /* Core structural fallbacks when external CDN CSS is blocked */
+    .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .app-body-row { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    @media (min-width: 768px) {
+      .app-body-row { flex-direction: row; }
+      .app-sidebar {
+        width: 15rem;
+        min-height: calc(100vh - 57px);
+        border-right: 1px solid rgba(39, 39, 42, 0.85);
+        border-bottom: none;
+        flex-direction: column;
+      }
+    }
+    .app-sidebar {
+      background: rgba(9, 9, 11, 0.92);
+      border-bottom: 1px solid rgba(39, 39, 42, 0.85);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .animate-pop {
+      animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-shake {
+      animation: shake 0.38s ease-in-out;
+    }
+
+    /* Headshot container gradient backdrop */
+    .player-stage {
+      background: linear-gradient(180deg, rgba(39, 39, 42, 0.45) 0%, rgba(24, 24, 27, 0.96) 100%);
+    }
+
+    button { cursor: pointer; }
+  </style>
+</head>
+<body class="court-bg app-shell flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
+
+  <!-- Full-Width Top Header Extending Across the Entire Screen -->
+  <header class="w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="w-full px-4 py-3.5 flex items-center justify-center">
+      <div class="flex items-center justify-center gap-2.5 text-center">
+        <h1 class="text-lg sm:text-xl font-black tracking-tight text-white leading-none">EBK — NBA WHO AM I?</h1>
+        <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md bg-orange-500/15 text-orange-400 border border-orange-500/30">Live</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Below-Header Row: Left Sidebar + Main Workspace -->
+  <div class="app-body-row flex-1 flex flex-col md:flex-row min-w-0">
+
+    <!-- Left Game Switcher Sidebar (Starts below the top bar) -->
+    <aside class="app-sidebar w-full md:w-60 bg-zinc-950/90 border-b md:border-b-0 md:border-r border-zinc-800/80 backdrop-blur-md flex flex-row md:flex-col justify-between px-4 py-3 md:p-4 shrink-0 z-30">
+      <nav aria-label="Game Switcher" class="flex flex-row md:flex-col gap-1.5 flex-1 md:flex-initial">
+        <div class="hidden md:block px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
+          Games
+        </div>
+
+        <!-- Active Tab: EBK -->
+        <button
+          type="button"
+          id="sidebar-tab-ebk"
+          onclick="selectSidebarGame('ebk')"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/40 text-white font-bold text-sm shadow-sm transition-all"
+        >
+          <span class="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0 shadow shadow-orange-500/30">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M6.5 6.5c3.5 3.5 3.5 7.5 0 11"></path>
+              <path d="M17.5 6.5c-3.5 3.5-3.5 7.5 0 11"></path>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+            </svg>
+          </span>
+          <span class="tracking-wide">EBK</span>
+          <span class="ml-auto hidden md:inline-block w-2 h-2 rounded-full bg-orange-400"></span>
+        </button>
+
+        <!-- Placeholder slot hint for future games -->
+        <div class="hidden md:flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-dashed border-zinc-800/80 text-zinc-600 text-xs font-medium select-none">
+          <span class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">+</span>
+          <span>More games soon</span>
+        </div>
+      </nav>
+
+      <!-- Sidebar Footer Info (Desktop) -->
+      <div class="hidden md:block pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500 space-y-1">
+        <div class="flex items-center justify-between">
+          <span>Daily Reset</span>
+          <span class="text-zinc-300 font-semibold">12:00 AM EST</span>
+        </div>
+        <div id="sidebar-reset-countdown" class="font-mono text-orange-400/90 text-xs">--:--:--</div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Column -->
+    <div class="flex-1 flex flex-col justify-between min-w-0">
+
+    <!-- Main Content Container -->
+    <main class="flex-1 w-full max-w-2xl mx-auto px-4 py-6 sm:py-8 flex flex-col items-center justify-center">
+
+      <!-- Loading Screen State -->
+      <div id="loading-screen" class="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
+          <svg class="w-7 h-7 text-orange-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-white mb-1">Scouting Live NBA Rosters &amp; MPG Stats</h2>
+        <p id="loading-status" class="text-sm text-zinc-400 mb-4">Fetching active players, headshots &amp; minutes per game...</p>
+        <div class="w-full max-w-sm mx-auto bg-zinc-800 h-2 rounded-full overflow-hidden mb-4">
+          <div id="loading-bar" class="bg-gradient-to-r from-orange-500 to-amber-400 h-full w-1/6 transition-all duration-300 rounded-full"></div>
+        </div>
+
+        <!-- Real-Time Diagnostic Log -->
+        <div id="loading-log" class="w-full max-w-md mx-auto bg-zinc-950/90 border border-zinc-800/90 rounded-xl p-3 text-left font-mono text-[11px] text-zinc-400 max-h-36 overflow-y-auto space-y-1 mb-4">
+          <div class="text-zinc-500">[0.0s] Initializing NBA data &amp; MPG pipeline...</div>
+        </div>
+
+        <div class="flex items-center justify-center gap-3">
+          <button id="start-now-btn" onclick="forceStartIfReady()" class="hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-600/20">
+            Start Now
+          </button>
+          <button onclick="initGame()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-700 transition">
+            Restart Fetch
+          </button>
+        </div>
+      </div>
+
+      <!-- Error / Retry Screen State (with Diagnostics + Custom JSON Importer) -->
+      <div id="error-screen" class="hidden w-full bg-zinc-900/90 border border-red-900/50 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-white mb-1">Live NBA APIs Unreachable</h2>
+        <p id="error-message" class="text-xs sm:text-sm text-zinc-400 mb-4">Exact network diagnostics from each live source:</p>
+
+        <div id="error-diagnostics" class="w-full max-w-lg mx-auto bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 text-left font-mono text-[11px] text-red-300/90 space-y-1.5 mb-5 max-h-40 overflow-y-auto"></div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2.5 mb-4">
+          <button onclick="initGame()" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-orange-600/20">
+            Retry Live APIs
+          </button>
+          <button onclick="toggleCustomJsonBox()" class="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-semibold rounded-xl border border-zinc-700 transition">
+            Paste Custom API JSON
+          </button>
+        </div>
+
+        <div id="custom-json-box" class="hidden w-full max-w-lg mx-auto text-left bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+          <label for="custom-json-input" class="block text-xs font-semibold text-zinc-300 mb-1.5">
+            Paste raw JSON from ESPN Roster / Core V3 Athletes API or an array of player objects:
+          </label>
+          <textarea id="custom-json-input" rows="4" placeholder='{"athletes":[{"id":"1966","displayName":"LeBron James","jersey":"23","position":{"abbreviation":"SF"}}]}' class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs font-mono text-zinc-200 focus:border-orange-500 outline-none mb-2.5"></textarea>
+          <div class="flex items-center justify-between gap-2">
+            <span id="custom-json-status" class="text-[11px] text-zinc-400">Supports ESPN Roster, ESPN Core V3, or custom JSON arrays.</span>
+            <button onclick="loadCustomJsonPayload()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition">
+              Import &amp; Play
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Game Area -->
+      <div id="game-card" class="hidden w-full animate-pop">
+
+        <!-- Mode Switcher Tabs: Daily Gauntlet vs Infinite -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="inline-flex p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+            <button
+              id="mode-daily-btn"
+              onclick="setGameMode('daily')"
+              class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle>
+                <polyline points="12 7 12 12 15 15"></polyline>
+              </svg>
+              <span>Daily Gauntlet</span>
+            </button>
+            <button
+              id="mode-infinite-btn"
+              onclick="setGameMode('infinite')"
+              class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" />
+              </svg>
+              <span>Infinite</span>
+            </button>
+          </div>
+
+          <!-- Hint Button (Only shown in Infinite Mode) -->
+          <div id="infinite-controls-right" class="hidden flex items-center gap-2">
+            <button id="hint-toggle-btn" onclick="revealNextHint()" class="px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 rounded-xl transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span id="hint-btn-label">Hint (0/3)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DAILY GAUNTLET: Pre-Start Lobby Screen -->
+        <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold mb-4">
+            <span>DAILY GAUNTLET</span>
+            <span>•</span>
+            <span id="daily-date-label">EST</span>
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">10-Second Daily Gauntlet</h2>
+          <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
+            Name as many current NBA players from today's pool. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
+          </p>
+
+          <div class="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-5">
+            <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
+              <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Today's Pool</div>
+              <div id="daily-pool-size" class="text-lg font-black text-white mt-0.5">--</div>
+            </div>
+            <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
+              <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Resets In</div>
+              <div id="daily-lobby-countdown" class="text-sm sm:text-base font-mono font-bold text-amber-400 mt-1">--:--:--</div>
+            </div>
+          </div>
+
+          <!-- Name Entry Bar for Global Leaderboard -->
+          <div class="max-w-sm mx-auto mb-5 text-left">
+            <label for="daily-player-name-input" class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+              Enter Your Name
+            </label>
+            <input
+              type="text"
+              id="daily-player-name-input"
+              maxlength="24"
+              autocomplete="nickname"
+              placeholder="Your name for the global leaderboard..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault();startDailyGauntlet();}"
+              class="w-full bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3 text-white placeholder-zinc-500 text-sm font-semibold outline-none transition"
+            />
+            <p id="daily-name-error" class="hidden text-xs font-semibold text-red-400 mt-1.5">
+              Please enter your name before starting the Daily Gauntlet.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            id="start-daily-btn"
+            onclick="startDailyGauntlet()"
+            class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 active:scale-[0.99] text-white font-black text-base rounded-2xl shadow-xl shadow-orange-600/25 transition flex items-center justify-center gap-2.5 mx-auto"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+            <span>Start Daily Gauntlet</span>
+          </button>
+        </div>
+
+        <!-- DAILY GAUNTLET: Completed Summary & Global Leaderboard Screen (Once per day per device) -->
+        <div id="daily-gameover-screen" class="hidden bg-zinc-900/95 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
+          <div id="daily-status-pill" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-extrabold uppercase tracking-wider mb-3">
+            Daily Gauntlet Completed
+          </div>
+
+          <p id="daily-completed-user-subtitle" class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">
+            Posted as <span id="daily-completed-username" class="text-white">--</span>
+          </p>
+
+          <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-1">
+            <span id="daily-final-score" class="text-orange-400">0</span> Players Named
+          </h2>
+          <p class="text-xs text-zinc-400 mb-4">
+            Come back at 12:00 AM EST for the next Daily Gauntlet (<span id="daily-completed-countdown" class="font-mono text-amber-400 font-bold">--:--:--</span>)
+          </p>
+
+          <!-- Player you ran out of time on -->
+          <div id="daily-missed-player-box" class="max-w-md mx-auto my-4 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3.5 flex items-center gap-3.5 text-left">
+            <img id="daily-missed-img" src="" alt="Missed Player" class="w-14 h-14 rounded-xl object-contain bg-zinc-900 border border-zinc-800 shrink-0" />
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ran out of time on</div>
+              <div id="daily-missed-name" class="text-sm sm:text-base font-extrabold text-white truncate">--</div>
+              <div id="daily-missed-meta" class="text-xs text-zinc-400 truncate">--</div>
+            </div>
+          </div>
+
+          <!-- Global Leaderboard -->
+          <div class="max-w-md mx-auto mt-5 bg-zinc-950/90 border border-zinc-800 rounded-2xl overflow-hidden text-left">
+            <div class="px-4 py-3 border-b border-zinc-800/90 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"></path>
+                </svg>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-white">Today's Global Leaderboard</span>
+              </div>
+              <span id="leaderboard-status-tag" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Live Standings
+              </span>
+            </div>
+            <div id="global-leaderboard-list" class="divide-y divide-zinc-800/70 max-h-64 overflow-y-auto">
+              <div class="px-4 py-4 text-xs text-zinc-500 text-center">Loading global standings...</div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
+            <button
+              type="button"
+              onclick="setGameMode('infinite')"
+              class="w-full sm:w-auto px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-600/20"
+            >
+              Play Infinite Mode
+            </button>
+          </div>
+        </div>
+
+        <!-- ACTIVE PLAYER CARD (Shared by running Daily Gauntlet & Infinite Mode) -->
+        <div id="card-surface" class="hidden bg-zinc-900/90 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300">
+
+          <!-- DAILY GAUNTLET TIMER BAR & LIVE COUNTER -->
+          <div id="daily-timer-header" class="hidden bg-zinc-950/90 border-b border-zinc-800/90 px-5 py-3">
+            <div class="flex items-center justify-between text-xs font-bold mb-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 uppercase tracking-wider text-[10px]">
+                  Daily Gauntlet
+                </span>
+                <span class="text-zinc-300">Named: <strong id="daily-live-score" class="text-emerald-400 text-sm font-black">0</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5 font-mono">
+                <span class="text-zinc-500 text-[11px]">TIME</span>
+                <span id="daily-timer-text" class="text-base font-black text-emerald-400 tabular-nums">10.0s</span>
+              </div>
+            </div>
+            <!-- Smooth Depleting Progress Bar -->
+            <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div id="daily-timer-bar" class="h-full bg-emerald-500 rounded-full transition-none" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- Top Player Stage -->
+          <div class="player-stage relative pt-5 px-6 flex flex-col items-center border-b border-zinc-800/80">
+
+            <div class="w-full flex items-center justify-between text-xs font-semibold text-zinc-400 mb-2">
+              <span id="roster-mode-badge" class="px-2.5 py-1 rounded-full bg-zinc-800/90 border border-zinc-700/60 text-zinc-300">
+                Daily Gauntlet
+              </span>
+              <span id="round-indicator" class="text-zinc-400 font-bold">Player #1</span>
+            </div>
+
+            <!-- Hints Pill Bar (Infinite Mode) -->
+            <div id="hints-container" class="flex flex-wrap items-center justify-center gap-2 min-h-[24px] mb-2"></div>
+
+            <!-- Headshot Frame -->
+            <div class="relative w-56 h-44 sm:w-64 sm:h-48 flex items-end justify-center overflow-hidden">
+              <div id="player-glow" class="absolute inset-0 bg-orange-500/10 blur-2xl rounded-full transition-colors duration-300"></div>
+
+              <div id="img-skeleton" class="absolute inset-0 flex items-center justify-center">
+                <div class="w-24 h-24 rounded-full bg-zinc-800 animate-pulse"></div>
+              </div>
+
+              <img
+                id="player-headshot"
+                src=""
+                alt="Mystery NBA Player"
+                class="relative z-10 w-full h-full object-contain object-bottom drop-shadow-[0_12px_20px_rgba(0,0,0,0.65)] transition-all duration-300 opacity-0 scale-95"
+              />
+            </div>
+          </div>
+
+          <!-- Reveal Banner (Shown ONLY when guessed right or revealed via I don't know in Infinite mode) -->
+          <div id="reveal-banner" class="hidden px-6 py-4 bg-zinc-950/70 border-b border-zinc-800/80 text-center">
+            <div id="result-badge" class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-1"></div>
+            <h2 id="revealed-name" class="text-xl sm:text-2xl font-black text-white tracking-tight"></h2>
+            <p id="revealed-meta" class="text-xs sm:text-sm text-zinc-400 font-medium mt-0.5"></p>
+          </div>
+
+          <!-- Typed Guess Interaction Area -->
+          <div class="p-5 sm:p-6">
+            <form id="type-form" onsubmit="handleTypedSubmit(event)" class="flex flex-col sm:flex-row gap-2.5">
+              <input
+                type="text"
+                id="player-input"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                placeholder="Type player name, last name, or nickname..."
+                class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 text-sm sm:text-base font-semibold outline-none transition"
+              />
+              <button
+                type="submit"
+                id="submit-guess-btn"
+                class="px-6 py-3.5 bg-orange-600 hover:bg-orange-500 active:scale-[0.99] text-white font-extrabold rounded-xl transition shadow-lg shadow-orange-600/20 text-sm sm:text-base"
+              >
+                Guess
+              </button>
+            </form>
+
+            <!-- Inline Wrong / Status Feedback Banner (Does NOT end round on wrong guess) -->
+            <div id="guess-feedback-row" class="mt-3 min-h-[24px] flex items-center justify-between gap-2 text-xs">
+              <div id="inline-feedback" class="font-semibold text-zinc-500">
+                Enter player name and press Enter.
+              </div>
+              <button
+                type="button"
+                onclick="skipPlayer()"
+                id="give-up-btn"
+                class="text-zinc-400 hover:text-red-400 underline underline-offset-2 transition shrink-0 font-medium"
+              >
+                I don't know (Reveal)
+              </button>
+            </div>
+
+            <!-- Next Player Button (Appears in Infinite Mode after solving or revealing) -->
+            <div id="next-action-container" class="hidden mt-5 pt-4 border-t border-zinc-800/80 flex items-center justify-between gap-3">
+              <span class="text-xs text-zinc-400 hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-300 font-mono">Enter</kbd> for next</span>
+              <button
+                id="next-player-btn"
+                onclick="nextRound()"
+                class="w-full sm:w-auto ml-auto px-6 py-3 bg-white hover:bg-zinc-200 text-zinc-950 font-extrabold rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <span>Next Player</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+      <!-- Footer -->
+      <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
+        <span id="footer-source-text">Live NBA roster, MPG &amp; headshot data powered dynamically via ESPN &amp; Wikipedia APIs.</span>
+      </footer>
+
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Optional Remote Global Leaderboard Configuration (Supabase / REST)
+     * Works out-of-the-box immediately with zero configuration; if you host publicly
+     * and add a Supabase URL + Anon Key below, scores sync across all devices globally.
+     */
+    const GLOBAL_LEADERBOARD_CONFIG = {
+      supabaseUrl: '',
+      supabaseAnonKey: '',
+      tableName: 'ebk_daily_leaderboard'
+    };
+
+    /**
+     * Resilient Storage Helpers (Uses localStorage with automatic window.name + memory fallback)
+     */
+    const _memoryStorageFallback = {};
+
+    function _readWindowNameStore() {
+      try {
+        if (window.name && window.name.startsWith('__EBK_STORE__:')) {
+          return JSON.parse(window.name.slice('__EBK_STORE__:'.length)) || {};
+        }
+      } catch (_) {}
+      return {};
+    }
+
+    function _writeWindowNameStore(obj) {
+      try {
+        window.name = '__EBK_STORE__:' + JSON.stringify(obj);
+      } catch (_) {}
+    }
+
+    function safeGetStorage(key) {
+      try {
+        const val = window.localStorage.getItem(key);
+        if (val !== null) return val;
+      } catch (_) {}
+      if (Object.prototype.hasOwnProperty.call(_memoryStorageFallback, key)) {
+        return _memoryStorageFallback[key];
+      }
+      const winStore = _readWindowNameStore();
+      return Object.prototype.hasOwnProperty.call(winStore, key) ? winStore[key] : null;
+    }
+
+    function safeSetStorage(key, value) {
+      const strVal = String(value);
+      _memoryStorageFallback[key] = strVal;
+      try {
+        window.localStorage.setItem(key, strVal);
+      } catch (_) {}
+      const winStore = _readWindowNameStore();
+      winStore[key] = strVal;
+      _writeWindowNameStore(winStore);
+    }
+
+    /**
+     * Global Game State
+     */
+    const state = {
+      players: [],             // All active live NBA players
+      playerMap: new Map(),    // Deduplicated player registry keyed by canonical ID
+      brokenImageIds: new Set(),
+      dailySeedPool: [],       // Deterministic daily seed of players averaging >= 10.0 MPG
+      dailyFilterActive: false,// True when real ESPN >= 10 MPG stats filter is applied
+      usedInfiniteIds: new Set(),
+      currentPlayer: null,
+      imageRequestToken: 0,    // Guards against stale image onload race conditions
+      gameMode: 'daily',       // 'daily' (Daily Gauntlet) | 'infinite' (Infinite)
+      roundNumber: 0,
+      roundAnswered: false,
+      hintsRevealed: 0,
+      wrongAttempts: 0,
+      gameStarted: false,
+      loadSessionId: 0,
+      loadStartTime: 0,
+      activeSourceLabel: 'ESPN Live API',
+      sourceErrors: [],
+
+      // Daily Gauntlet state
+      playerName: '',
+      dailyRunning: false,
+      dailyIndex: 0,
+      dailyScore: 0,
+      dailyTimerDuration: 10.0,
+      dailyTimerRemaining: 10.0,
+      dailyLastFrameTime: 0,
+      dailyRafId: null
+    };
+
+    // Live API Endpoints
+    const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
+    const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?enable=stats`;
+    const ESPN_TEAM_STATS_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/statistics`;
+    const ESPN_ATHLETE_STATS_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/athletes/statistics`;
+    const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
+    const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
+
+    /**
+     * Append a timestamped line to the real-time diagnostic log
+     */
+    function logDiag(message, tone = 'info') {
+      const logEl = document.getElementById('loading-log');
+      if (!logEl) return;
+      const elapsed = ((performance.now() - state.loadStartTime) / 1000).toFixed(1);
+      const colorClass =
+        tone === 'ok' ? 'text-emerald-400' :
+        tone === 'warn' ? 'text-amber-400' :
+        tone === 'err' ? 'text-red-400' : 'text-zinc-300';
+
+      const line = document.createElement('div');
+      line.className = colorClass;
+      line.textContent = `[${elapsed}s] ${message}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    /**
+     * Sidebar Game Switcher (Single-game EBK active state)
+     */
+    function selectSidebarGame(gameId) {
+      if (gameId === 'ebk') {
+        const tab = document.getElementById('sidebar-tab-ebk');
+        if (tab) {
+          tab.classList.add('bg-orange-500/15', 'border-orange-500/40', 'text-white');
+        }
+      }
+    }
+
+    /**
+     * EST (America/New_York) Date Key & Midnight Countdown Helpers
+     */
+    function getEstDateInfo() {
+      const now = new Date();
+      try {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).formatToParts(now);
+
+        const map = {};
+        for (const p of parts) {
+          if (p.type !== 'literal') map[p.type] = p.value;
+        }
+        const dateKey = `${map.year}-${map.month}-${map.day}`;
+        const h = parseInt(map.hour, 10) % 24;
+        const m = parseInt(map.minute, 10);
+        const s = parseInt(map.second, 10);
+        const elapsedTodaySec = h * 3600 + m * 60 + s;
+        const remainingSec = Math.max(0, 86400 - elapsedTodaySec);
+        return { dateKey, remainingSec };
+      } catch (_) {
+        const utcDate = now.toISOString().slice(0, 10);
+        const elapsed = now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
+        return { dateKey: utcDate, remainingSec: Math.max(0, 86400 - elapsed) };
+      }
+    }
+
+    function formatCountdown(totalSec) {
+      const hrs = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const secs = String(totalSec % 60).padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    }
+
+    function updateEstCountdowns() {
+      const { dateKey, remainingSec } = getEstDateInfo();
+      const formatted = formatCountdown(remainingSec);
+
+      const sideEl = document.getElementById('sidebar-reset-countdown');
+      if (sideEl) sideEl.textContent = formatted;
+
+      const lobbyEl = document.getElementById('daily-lobby-countdown');
+      if (lobbyEl) lobbyEl.textContent = formatted;
+
+      const completedEl = document.getElementById('daily-completed-countdown');
+      if (completedEl) completedEl.textContent = formatted;
+
+      const dateLabel = document.getElementById('daily-date-label');
+      if (dateLabel) dateLabel.textContent = `${dateKey} EST`;
+    }
+
+    setInterval(updateEstCountdowns, 1000);
+
+    /**
+     * Deterministic Seeded PRNG (Hash + Mulberry32) for Daily Gauntlet
+     */
+    function hashString(str) {
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(seed) {
+      let a = seed >>> 0;
+      return function () {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /**
+     * Build the deterministic Daily Gauntlet Pool for today's EST date
+     */
+    function rebuildDailySeedPool() {
+      const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
+      const qualifiedByMpg = validPlayers.filter(p => typeof p.mpg === 'number' && p.mpg >= 10.0);
+      const useMpgFilter = qualifiedByMpg.length >= 12;
+      state.dailyFilterActive = useMpgFilter;
+
+      const sourceList = useMpgFilter ? qualifiedByMpg : validPlayers;
+      const canonical = [...sourceList].sort((a, b) =>
+        String(a.espnId || a.id).localeCompare(String(b.espnId || b.id))
+      );
+
+      const { dateKey } = getEstDateInfo();
+      const rng = mulberry32(hashString('EBK_DAILY_GAUNTLET_' + dateKey));
+
+      for (let i = canonical.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [canonical[i], canonical[j]] = [canonical[j], canonical[i]];
+      }
+
+      state.dailySeedPool = canonical;
+
+      const poolSizeEl = document.getElementById('daily-pool-size');
+      if (poolSizeEl) {
+        poolSizeEl.textContent = `${state.dailySeedPool.length} Players`;
+      }
+      const badgeEl = document.getElementById('roster-mode-badge');
+      if (badgeEl && state.gameMode === 'daily') {
+        badgeEl.textContent = 'Daily Gauntlet';
+      }
+    }
+
+    /**
+     * Once-Per-Day Device Completion Lockout & Global Leaderboard Service
+     */
+    function getDailyCompletionRecord() {
+      const { dateKey } = getEstDateInfo();
+      const raw = safeGetStorage(`ebk_daily_completed_${dateKey}`);
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.completed ? parsed : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function saveDailyCompletionRecord(record) {
+      const { dateKey } = getEstDateInfo();
+      safeSetStorage(`ebk_daily_completed_${dateKey}`, JSON.stringify({
+        ...record,
+        dateKey,
+        completed: true
+      }));
+    }
+
+    function buildSeededGlobalStandings(dateKey) {
+      const rng = mulberry32(hashString('EBK_GLOBAL_LB_' + dateKey));
+      const handles = [
+        'HoopsJunkie', 'MambaMentality24', 'CourtVision', 'BucketGetter',
+        'SplashZone30', 'RimProtector', 'SixthManOTY', 'IsoJoe',
+        'LogoLillard', 'BaselineFade'
+      ];
+      return handles.map((name, idx) => ({
+        id: `global_seed_${idx}`,
+        name,
+        score: Math.max(3, Math.floor(rng() * 24) + (10 - idx)),
+        completedAt: Date.now() - (idx + 1) * 420000,
+        isSelf: false
+      }));
+    }
+
+    async function fetchGlobalLeaderboardEntries(dateKey) {
+      const storageKey = `ebk_global_lb_${dateKey}`;
+      let localEntries = [];
+      const raw = safeGetStorage(storageKey);
+      if (raw) {
+        try { localEntries = JSON.parse(raw) || []; } catch (_) {}
+      }
+      if (!Array.isArray(localEntries) || localEntries.length === 0) {
+        localEntries = buildSeededGlobalStandings(dateKey);
+        safeSetStorage(storageKey, JSON.stringify(localEntries));
+      }
+
+      if (GLOBAL_LEADERBOARD_CONFIG.supabaseUrl && GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey) {
+        try {
+          const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.replace(/\/$/, '');
+          const table = GLOBAL_LEADERBOARD_CONFIG.tableName || 'ebk_daily_leaderboard';
+          const url = `${base}/rest/v1/${table}?daily_date=eq.${encodeURIComponent(dateKey)}&select=id,username,score,created_at&order=score.desc,created_at.asc&limit=50`;
+          const res = await fetch(url, {
+            headers: {
+              'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey,
+              'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey}`
+            }
+          });
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows) && rows.length > 0) {
+              const myRecord = getDailyCompletionRecord();
+              return rows.map(r => ({
+                id: String(r.id),
+                name: r.username || 'Player',
+                score: Number(r.score) || 0,
+                completedAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+                isSelf: myRecord && r.username === myRecord.name && Number(r.score) === Number(myRecord.score)
+              }));
+            }
+          }
+        } catch (_) {}
+      }
+
+      return localEntries.sort((a, b) => (b.score - a.score) || (a.completedAt - b.completedAt));
+    }
+
+    async function postScoreToGlobalLeaderboard(entry) {
+      const { dateKey } = getEstDateInfo();
+      const storageKey = `ebk_global_lb_${dateKey}`;
+      const existing = await fetchGlobalLeaderboardEntries(dateKey);
+
+      const newEntry = {
+        id: `self_${Date.now()}`,
+        name: entry.name,
+        score: entry.score,
+        completedAt: entry.completedAt || Date.now(),
+        isSelf: true
+      };
+
+      const filtered = existing.filter(item => !item.isSelf);
+      filtered.push(newEntry);
+      filtered.sort((a, b) => (b.score - a.score) || (a.completedAt - b.completedAt));
+      safeSetStorage(storageKey, JSON.stringify(filtered));
+
+      if (GLOBAL_LEADERBOARD_CONFIG.supabaseUrl && GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey) {
+        try {
+          const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.replace(/\/$/, '');
+          const table = GLOBAL_LEADERBOARD_CONFIG.tableName || 'ebk_daily_leaderboard';
+          await fetch(`${base}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey,
+              'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey}`,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              username: entry.name,
+              score: entry.score,
+              daily_date: dateKey
+            })
+          });
+        } catch (_) {}
+      }
+
+      return await fetchGlobalLeaderboardEntries(dateKey);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function renderGlobalLeaderboard() {
+      const listEl = document.getElementById('global-leaderboard-list');
+      if (!listEl) return;
+      const { dateKey } = getEstDateInfo();
+      const entries = await fetchGlobalLeaderboardEntries(dateKey);
+
+      listEl.innerHTML = '';
+      if (!entries.length) {
+        listEl.innerHTML = '<div class="px-4 py-4 text-xs text-zinc-500 text-center">No scores posted yet today.</div>';
+        return;
+      }
+
+      entries.forEach((row, index) => {
+        const rank = index + 1;
+        const item = document.createElement('div');
+        item.className = row.isSelf
+          ? 'px-4 py-2.5 flex items-center justify-between bg-orange-500/15 border-l-2 border-orange-500'
+          : 'px-4 py-2.5 flex items-center justify-between hover:bg-zinc-900/60';
+
+        const rankBadgeClass =
+          rank === 1 ? 'bg-amber-400/20 text-amber-300 border-amber-400/40' :
+          rank === 2 ? 'bg-zinc-300/15 text-zinc-200 border-zinc-400/30' :
+          rank === 3 ? 'bg-orange-400/15 text-orange-300 border-orange-400/30' :
+          'bg-zinc-900 text-zinc-400 border-zinc-800';
+
+        const youBadge = row.isSelf
+          ? '<span class="ml-2 px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded bg-orange-500 text-white">You</span>'
+          : '';
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-6 h-6 rounded-lg border text-[11px] font-black flex items-center justify-center shrink-0 ${rankBadgeClass}">
+              ${rank}
+            </span>
+            <span class="text-xs sm:text-sm font-bold ${row.isSelf ? 'text-white' : 'text-zinc-200'} truncate">
+              ${escapeHtml(row.name)}${youBadge}
+            </span>
+          </div>
+          <div class="text-xs sm:text-sm font-black tabular-nums ${row.isSelf ? 'text-orange-400' : 'text-emerald-400'} shrink-0 ml-3">
+            ${row.score} <span class="text-[10px] font-semibold text-zinc-500">pts</span>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    /**
+     * Fetch JSON with strict AbortController timeout and detailed error reporting
+     */
+    async function fetchJsonStrict(url, timeoutMs = 5500) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, {
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit',
+          headers: { 'Accept': 'application/json' }
+        });
+        clearTimeout(timer);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText || ''}`.trim());
+        }
+        return await res.json();
+      } catch (err) {
+        clearTimeout(timer);
+        if (err && err.name === 'AbortError') {
+          throw new Error(`Timeout after ${timeoutMs}ms`);
+        }
+        throw new Error(err?.message || 'Network / CORS blocked');
+      }
+    }
+
+    /**
+     * JSONP <script> loader for Wikipedia MediaWiki API (works even when Origin: null under file://)
+     */
+    function fetchWikipediaJsonp(timeoutMs = 5500) {
+      return new Promise((resolve, reject) => {
+        const cbName = `__nbaWikiCb_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        const script = document.createElement('script');
+        let settled = false;
+
+        const cleanup = () => {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
+        };
+
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(new Error(`JSONP timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        window[cbName] = (data) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          cleanup();
+          reject(new Error('JSONP <script> blocked by CSP or offline'));
+        };
+
+        script.src = `${WIKI_BASE_API}&callback=${cbName}`;
+        document.head.appendChild(script);
+      });
+    }
+
+    /**
+     * Extract real MPG (minutes per game) from ESPN team/athlete statistics JSON payloads
+     */
+    function extractMpgMapFromTeamStats(statsJson) {
+      const mpgByEspnId = new Map();
+      const categories =
+        statsJson?.results?.stats?.categories ||
+        statsJson?.stats?.categories ||
+        statsJson?.athletes ||
+        [];
+
+      if (!Array.isArray(categories)) return mpgByEspnId;
+
+      for (const item of categories) {
+        const names = item?.names || item?.labels || [];
+        if (Array.isArray(names) && names.length > 0) {
+          const minIdx = names.findIndex(n =>
+            /^(min|mpg|minutes|avgMinutes)$/i.test(String(n).trim())
+          );
+          if (minIdx !== -1 && Array.isArray(item.athletes)) {
+            for (const entry of item.athletes) {
+              const aid = entry?.athlete?.id;
+              const rawVal = entry?.stats?.[minIdx];
+              if (aid && rawVal !== undefined && rawVal !== null) {
+                const parsedMpg = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
+                if (!Number.isNaN(parsedMpg)) {
+                  mpgByEspnId.set(String(aid), parsedMpg);
+                }
+              }
+            }
+          }
+        }
+
+        if (item?.id && Array.isArray(item?.statsSummary?.statistics)) {
+          const minStat = item.statsSummary.statistics.find(s =>
+            /^(min|mpg|minutes|avgMinutes)$/i.test(String(s.name || s.abbreviation || '').trim())
+          );
+          if (minStat && minStat.value !== undefined) {
+            const parsedMpg = parseFloat(String(minStat.value));
+            if (!Number.isNaN(parsedMpg)) {
+              mpgByEspnId.set(String(item.id), parsedMpg);
+            }
+          }
+        }
+      }
+      return mpgByEspnId;
+    }
+
+    /**
+     * Extract MPG directly from an athlete object if ESPN roster?enable=stats includes it
+     */
+    function extractAthleteInlineMpg(athlete) {
+      const cats = athlete?.statistics?.splits?.categories || athlete?.statsSummary?.statistics || [];
+      if (!Array.isArray(cats)) return null;
+
+      for (const c of cats) {
+        if (/^(min|mpg|minutes|avgMinutes)$/i.test(String(c?.name || c?.abbreviation || '').trim())) {
+          const v = parseFloat(String(c.value ?? c.displayValue ?? ''));
+          if (!Number.isNaN(v)) return v;
+        }
+        if (Array.isArray(c?.stats)) {
+          const minObj = c.stats.find(s =>
+            /^(min|mpg|minutes|avgMinutes)$/i.test(String(s?.name || s?.abbreviation || '').trim())
+          );
+          if (minObj) {
+            const v = parseFloat(String(minObj.value ?? minObj.displayValue ?? ''));
+            if (!Number.isNaN(v)) return v;
+          }
+        }
+      }
+      return null;
+    }
+
+    /**
+     * Normalize and merge newly fetched players into the live pool
+     */
+    function addPlayersToPool(newPlayers, sourceLabel) {
+      let changed = 0;
+      for (const p of newPlayers) {
+        if (!p || !p.id || !p.fullName || !p.headshot) continue;
+        if (state.brokenImageIds.has(p.id)) continue;
+
+        const existing = state.playerMap.get(p.id);
+        if (!existing) {
+          const parts = p.fullName.trim().split(/\s+/);
+          const normalized = {
+            id: String(p.id),
+            espnId: p.espnId ? String(p.espnId) : String(p.id),
+            fullName: p.fullName.trim(),
+            firstName: p.firstName || parts[0],
+            lastName: p.lastName || parts.slice(1).join(' ') || parts[0],
+            headshot: p.headshot,
+            fallbackHeadshot: p.fallbackHeadshot || p.headshot,
+            jersey: p.jersey || '?',
+            position: p.position || 'NBA',
+            teamName: p.teamName || 'NBA',
+            teamAbbr: p.teamAbbr || 'NBA',
+            bioHint: p.bioHint || '',
+            mpg: typeof p.mpg === 'number' ? p.mpg : null
+          };
+          state.playerMap.set(normalized.id, normalized);
+          changed++;
+        } else {
+          if (typeof p.mpg === 'number' && p.mpg >= 0 && existing.mpg !== p.mpg) {
+            existing.mpg = p.mpg;
+            changed++;
+          }
+          if (p.headshot && p.headshot !== existing.headshot) {
+            existing.headshot = p.headshot;
+            changed++;
+          }
+        }
+      }
+
+      if (changed > 0) {
+        state.players = Array.from(state.playerMap.values());
+        state.activeSourceLabel = sourceLabel;
+        if (!state.dailyRunning) {
+          rebuildDailySeedPool();
+        }
+
+        const mpgCount = state.players.filter(p => typeof p.mpg === 'number' && p.mpg >= 10).length;
+        const poolCountEl = document.getElementById('pool-count-text');
+        if (poolCountEl) {
+          const mpgLabel = mpgCount > 0 ? ` (${mpgCount} ≥10 MPG)` : '';
+          poolCountEl.textContent = `Live Pool: ${state.players.length} players${mpgLabel} • ${sourceLabel}`;
+        }
+        const footerEl = document.getElementById('footer-source-text');
+        if (footerEl) {
+          footerEl.textContent = `Live NBA roster, MPG & headshot data streamed dynamically via ${sourceLabel}.`;
+        }
+
+        const startNowBtn = document.getElementById('start-now-btn');
+        if (startNowBtn && state.players.length >= 6 && !state.gameStarted) {
+          startNowBtn.classList.remove('hidden');
+          startNowBtn.textContent = `Start Now (${state.players.length} players ready)`;
+        }
+      }
+      return changed;
+    }
+
+    /**
+     * Transition immediately into active gameplay once enough players are available
+     */
+    function launchGameImmediately(sessionId) {
+      if (sessionId !== state.loadSessionId || state.gameStarted) return;
+      if (state.players.length < 4) return;
+
+      state.gameStarted = true;
+      document.getElementById('loading-bar').style.width = '100%';
+      const dot = document.getElementById('status-dot');
+      if (dot) {
+        dot.classList.remove('bg-amber-400');
+        dot.classList.add('bg-emerald-400');
+      }
+
+      document.getElementById('loading-screen').classList.add('hidden');
+      document.getElementById('error-screen').classList.add('hidden');
+      document.getElementById('game-card').classList.remove('hidden');
+
+      updateEstCountdowns();
+      rebuildDailySeedPool();
+      setGameMode('daily');
+    }
+
+    function forceStartIfReady() {
+      launchGameImmediately(state.loadSessionId);
+    }
+
+    /**
+     * Background MPG stats enrichment for a team (never blocks roster display)
+     */
+    async function enrichTeamMpgInBackground(teamId, sessionId) {
+      try {
+        const [statsRes, athleteStatsRes] = await Promise.allSettled([
+          fetchJsonStrict(ESPN_TEAM_STATS_URL(teamId), 5500),
+          fetchJsonStrict(ESPN_ATHLETE_STATS_URL(teamId), 5500)
+        ]);
+        if (sessionId !== state.loadSessionId) return;
+
+        const mpgMap = new Map();
+        if (statsRes.status === 'fulfilled') {
+          extractMpgMapFromTeamStats(statsRes.value).forEach((v, k) => mpgMap.set(k, v));
+        }
+        if (athleteStatsRes.status === 'fulfilled') {
+          extractMpgMapFromTeamStats(athleteStatsRes.value).forEach((v, k) => mpgMap.set(k, v));
+        }
+
+        if (mpgMap.size > 0) {
+          const updates = [];
+          mpgMap.forEach((mpg, aid) => {
+            const existing = state.playerMap.get(`espn_${aid}`);
+            if (existing) {
+              updates.push({ ...existing, mpg });
+            }
+          });
+          if (updates.length > 0) {
+            addPlayersToPool(updates, 'ESPN Live Rosters & Stats');
+          }
+        }
+      } catch (_) {
+        // Non-fatal: inline roster MPG or full pool remains usable
+      }
+    }
+
+    /**
+     * SOURCE A (Primary): ESPN Public Roster API (All 30 Teams in deterministic order, batches of 6)
+     */
+    async function fetchSourceA_EspnRosters(sessionId) {
+      logDiag('Source A: Fetching NBA teams from ESPN Roster API...');
+      const teamsData = await fetchJsonStrict(ESPN_TEAMS_URL, 5500);
+      if (sessionId !== state.loadSessionId) return;
+
+      const rawTeams = teamsData?.sports?.[0]?.leagues?.[0]?.teams || [];
+      const teams = rawTeams.map(t => t.team || t).filter(t => t && t.id);
+
+      if (!teams.length) {
+        throw new Error('ESPN teams endpoint returned 0 teams');
+      }
+
+      logDiag(`Source A: Found ${teams.length} teams. Streaming rosters & MPG in batches of 6...`, 'ok');
+      document.getElementById('loading-status').textContent = `Found ${teams.length} NBA teams — streaming rosters & MPG...`;
+      document.getElementById('loading-bar').style.width = '30%';
+
+      // Deterministic team order so daily seed builds consistently across browsers
+      const sortedTeams = [...teams].sort((a, b) =>
+        String(a.id).localeCompare(String(b.id))
+      );
+
+      let teamsCompleted = 0;
+      let firstRosterError = null;
+      const batchSize = 6;
+
+      for (let i = 0; i < sortedTeams.length; i += batchSize) {
+        if (sessionId !== state.loadSessionId) return;
+        const batch = sortedTeams.slice(i, i + batchSize);
+
+        await Promise.all(
+          batch.map(async (team) => {
+            try {
+              const data = await fetchJsonStrict(ESPN_ROSTER_URL(team.id), 5500);
+              if (sessionId !== state.loadSessionId) return;
+
+              // Handle both flat athlete array and nested position-grouped items array
+              let rawAthletes = [];
+              if (Array.isArray(data?.athletes)) {
+                for (const entry of data.athletes) {
+                  if (Array.isArray(entry?.items)) {
+                    rawAthletes.push(...entry.items);
+                  } else if (entry && (entry.id || entry.displayName || entry.fullName)) {
+                    rawAthletes.push(entry);
+                  }
+                }
+              }
+
+              const mappedPlayers = rawAthletes
+                .filter(a => a && a.id && (a.displayName || a.fullName))
+                .map(a => {
+                  const aid = String(a.id);
+                  const inlineMpg = extractAthleteInlineMpg(a);
+                  const exactEspnHeadshot = `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`;
+                  return {
+                    id: `espn_${aid}`,
+                    espnId: aid,
+                    fullName: (a.displayName || a.fullName).trim(),
+                    firstName: a.firstName,
+                    lastName: a.lastName,
+                    teamName: team.displayName || team.name || 'NBA',
+                    teamAbbr: team.abbreviation || 'NBA',
+                    jersey: a.jersey || '?',
+                    position: a.position?.abbreviation || a.position?.name || 'NBA',
+                    bioHint: `${a.position?.name || 'Player'} (#${a.jersey || '?'}) on the ${team.displayName || 'NBA'}.`,
+                    headshot: a.headshot?.href || exactEspnHeadshot,
+                    fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`,
+                    mpg: inlineMpg
+                  };
+                });
+
+              addPlayersToPool(mappedPlayers, 'ESPN Live Rosters');
+              teamsCompleted++;
+
+              // Fire non-blocking MPG stats enrichment for this team
+              enrichTeamMpgInBackground(team.id, sessionId);
+
+              if (!state.gameStarted) {
+                const pct = Math.min(95, 30 + Math.round((teamsCompleted / sortedTeams.length) * 65));
+                document.getElementById('loading-bar').style.width = `${pct}%`;
+                logDiag(`Loaded ${team.abbreviation || team.displayName} (${state.players.length} players in pool)`, 'ok');
+              }
+
+              // Launch immediately once first 3 teams (~25+ players) are loaded
+              if (!state.gameStarted && teamsCompleted >= 3 && state.players.length >= 25) {
+                logDiag(`3 teams loaded (${state.players.length} players) — launching game while remaining ${sortedTeams.length - teamsCompleted} teams stream!`, 'ok');
+                launchGameImmediately(sessionId);
+              }
+            } catch (err) {
+              if (!firstRosterError) firstRosterError = err.message;
+            }
+          })
+        );
+      }
+
+      if (!state.gameStarted && state.players.length >= 4) {
+        launchGameImmediately(sessionId);
+      } else if (state.players.length < 4) {
+        throw new Error(firstRosterError || 'Roster endpoints returned fewer than 4 players');
+      }
+    }
+
+    /**
+     * SOURCE B (Backup 1): ESPN Core V3 Active Athletes API (Single HTTP GET request)
+     */
+    async function fetchSourceB_EspnCoreAthletes(sessionId) {
+      logDiag('Source B: Fetching active NBA athletes via ESPN Core V3 (single request)...', 'warn');
+      document.getElementById('loading-status').textContent = 'Querying ESPN Core V3 Active Athletes...';
+      document.getElementById('loading-bar').style.width = '55%';
+
+      const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 6500);
+      if (sessionId !== state.loadSessionId) return;
+
+      const items = Array.isArray(data?.items) ? data.items : [];
+      const activePlayers = items
+        .filter(item => item && item.active === true && item.id && (item.displayName || item.fullName))
+        .map(item => ({
+          id: `espncore_${item.id}`,
+          espnId: String(item.id),
+          fullName: (item.displayName || item.fullName).trim(),
+          firstName: item.firstName,
+          lastName: item.lastName,
+          teamName: 'Active NBA Roster',
+          teamAbbr: 'NBA',
+          jersey: item.jersey || '?',
+          position: item.position?.abbreviation || item.position?.name || 'NBA',
+          bioHint: `${item.position?.name || 'Active NBA Player'} (#${item.jersey || '?'})`,
+          headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${item.id}.png`,
+          fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${item.id}.png&w=350&h=254`,
+          mpg: null
+        }));
+
+      addPlayersToPool(activePlayers, 'ESPN Core V3 Live');
+      if (state.players.length >= 4) {
+        logDiag(`Source B: Loaded ${state.players.length} active NBA athletes!`, 'ok');
+        launchGameImmediately(sessionId);
+      } else {
+        throw new Error('ESPN Core V3 returned 0 active athletes');
+      }
+    }
+
+    /**
+     * SOURCE C (Backup 2): Wikipedia MediaWiki API (CORS origin=* + JSONP <script> fallback for file://)
+     */
+    async function fetchSourceC_Wikipedia(sessionId) {
+      logDiag('Source C: Querying Wikipedia MediaWiki Current NBA Players (CORS + JSONP)...', 'warn');
+      document.getElementById('loading-status').textContent = 'Fetching Current NBA Players via Wikipedia API...';
+      document.getElementById('loading-bar').style.width = '78%';
+
+      let wikiData;
+      try {
+        wikiData = await fetchJsonStrict(`${WIKI_BASE_API}&origin=*`, 5000);
+      } catch (corsErr) {
+        logDiag(`Source C CORS fetch failed (${corsErr.message}), trying JSONP <script> bypass...`, 'warn');
+        wikiData = await fetchWikipediaJsonp(5000);
+      }
+
+      if (sessionId !== state.loadSessionId) return;
+
+      const pages = Object.values(wikiData?.query?.pages || {});
+      const parsed = pages
+        .filter(p => p && p.title && p.thumbnail?.source && !p.title.startsWith('Category:'))
+        .map(p => {
+          const cleanName = p.title.replace(/\s*\(basketball\)\s*/gi, '').replace(/\s*\(.*?\)\s*/g, '').trim();
+          const desc = p.description || 'NBA Player';
+          return {
+            id: `wiki_${p.pageid}`,
+            espnId: `wiki_${p.pageid}`,
+            fullName: cleanName,
+            teamName: 'Active NBA Roster',
+            teamAbbr: 'NBA',
+            jersey: '?',
+            position: desc.charAt(0).toUpperCase() + desc.slice(1),
+            bioHint: desc.charAt(0).toUpperCase() + desc.slice(1),
+            headshot: p.thumbnail.source,
+            fallbackHeadshot: p.thumbnail.source,
+            mpg: null
+          };
+        });
+
+      addPlayersToPool(parsed, 'Wikipedia Live API');
+      if (state.players.length >= 4) {
+        logDiag(`Source C: Loaded ${state.players.length} NBA players with thumbnails!`, 'ok');
+        launchGameImmediately(sessionId);
+      } else {
+        throw new Error('Wikipedia API returned fewer than 4 player thumbnails');
+      }
+    }
+
+    /**
+     * Master Multi-Source Live NBA Pipeline
+     */
+    async function fetchLiveNbaPlayers(sessionId) {
+      state.sourceErrors = [];
+
+      // 1. Source A: ESPN Public Roster API + MPG Stats (30 teams, progressive start after 3 teams)
+      try {
+        await fetchSourceA_EspnRosters(sessionId);
+        return;
+      } catch (errA) {
+        if (sessionId !== state.loadSessionId) return;
+        const msgA = `Source A (ESPN Rosters): ${errA.message}`;
+        state.sourceErrors.push(msgA);
+        logDiag(`${msgA} -> Switching to Backup 1...`, 'err');
+      }
+
+      // 2. Source B: ESPN Core V3 Single-Request Active Athletes API
+      try {
+        await fetchSourceB_EspnCoreAthletes(sessionId);
+        return;
+      } catch (errB) {
+        if (sessionId !== state.loadSessionId) return;
+        const msgB = `Source B (ESPN Core V3): ${errB.message}`;
+        state.sourceErrors.push(msgB);
+        logDiag(`${msgB} -> Switching to Backup 2...`, 'err');
+      }
+
+      // 3. Source C: Wikipedia MediaWiki CORS + JSONP API
+      try {
+        await fetchSourceC_Wikipedia(sessionId);
+        return;
+      } catch (errC) {
+        if (sessionId !== state.loadSessionId) return;
+        const msgC = `Source C (Wikipedia API): ${errC.message}`;
+        state.sourceErrors.push(msgC);
+        logDiag(msgC, 'err');
+      }
+
+      if (sessionId !== state.loadSessionId) return;
+      showDiagnosticErrorScreen();
+    }
+
+    function showDiagnosticErrorScreen() {
+      document.getElementById('loading-screen').classList.add('hidden');
+      document.getElementById('error-screen').classList.remove('hidden');
+
+      const diagContainer = document.getElementById('error-diagnostics');
+      diagContainer.innerHTML = '';
+      const errors = state.sourceErrors.length
+        ? state.sourceErrors
+        : ['Unknown network failure while querying live NBA APIs.'];
+
+      errors.forEach(errText => {
+        const row = document.createElement('div');
+        row.textContent = `• ${errText}`;
+        diagContainer.appendChild(row);
+      });
+    }
+
+    function toggleCustomJsonBox() {
+      document.getElementById('custom-json-box').classList.toggle('hidden');
+    }
+
+    function loadCustomJsonPayload() {
+      const raw = document.getElementById('custom-json-input').value.trim();
+      const statusEl = document.getElementById('custom-json-status');
+      if (!raw) {
+        statusEl.textContent = 'Please paste valid JSON first.';
+        statusEl.className = 'text-[11px] text-amber-400';
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(raw);
+        let extracted = [];
+
+        if (Array.isArray(parsed?.athletes)) {
+          const teamName = parsed?.team?.displayName || 'NBA';
+          const teamAbbr = parsed?.team?.abbreviation || 'NBA';
+          for (const entry of parsed.athletes) {
+            const list = Array.isArray(entry?.items) ? entry.items : [entry];
+            for (const a of list) {
+              if (a && a.id && (a.displayName || a.fullName)) {
+                extracted.push({
+                  id: `custom_${a.id}`,
+                  espnId: String(a.id),
+                  fullName: a.displayName || a.fullName,
+                  teamName,
+                  teamAbbr,
+                  jersey: a.jersey || '?',
+                  position: a.position?.abbreviation || a.position?.name || 'NBA',
+                  headshot: a.headshot?.href || `https://a.espncdn.com/i/headshots/nba/players/full/${a.id}.png`
+                });
+              }
+            }
+          }
+        } else if (Array.isArray(parsed?.items)) {
+          extracted = parsed.items
+            .filter(item => item && item.id && (item.displayName || item.fullName))
+            .map(item => ({
+              id: `custom_${item.id}`,
+              espnId: String(item.id),
+              fullName: item.displayName || item.fullName,
+              teamName: 'NBA',
+              teamAbbr: 'NBA',
+              jersey: item.jersey || '?',
+              position: item.position?.abbreviation || 'NBA',
+              headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${item.id}.png`
+            }));
+        } else if (Array.isArray(parsed)) {
+          extracted = parsed
+            .filter(p => p && (p.name || p.displayName || p.fullName))
+            .map((p, idx) => ({
+              id: `custom_${p.id || idx}`,
+              espnId: String(p.id || idx),
+              fullName: p.name || p.displayName || p.fullName,
+              teamName: p.team || p.teamName || 'NBA',
+              teamAbbr: p.teamAbbr || 'NBA',
+              jersey: p.jersey || '?',
+              position: p.position || 'NBA',
+              headshot: p.headshot || (p.id ? `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png` : '')
+            }));
+        }
+
+        const count = addPlayersToPool(extracted, 'Imported JSON');
+        if (state.players.length >= 4) {
+          statusEl.textContent = `Imported ${count} players! Launching...`;
+          statusEl.className = 'text-[11px] text-emerald-400';
+          launchGameImmediately(state.loadSessionId);
+        } else {
+          statusEl.textContent = `Found ${state.players.length} valid players (need at least 4).`;
+          statusEl.className = 'text-[11px] text-amber-400';
+        }
+      } catch (err) {
+        statusEl.textContent = `Invalid JSON: ${err.message}`;
+        statusEl.className = 'text-[11px] text-red-400';
+      }
+    }
+
+    /**
+     * Initialize / Restart the game
+     */
+    function initGame() {
+      const sessionId = ++state.loadSessionId;
+      state.loadStartTime = performance.now();
+      state.gameStarted = false;
+      state.players = [];
+      state.playerMap.clear();
+      state.brokenImageIds.clear();
+      state.dailySeedPool = [];
+      state.usedInfiniteIds.clear();
+      stopDailyTimer();
+
+      const loadingScreen = document.getElementById('loading-screen');
+      const errorScreen = document.getElementById('error-screen');
+      const gameCard = document.getElementById('game-card');
+      const loadingStatus = document.getElementById('loading-status');
+      const loadingBar = document.getElementById('loading-bar');
+      const logEl = document.getElementById('loading-log');
+      const startNowBtn = document.getElementById('start-now-btn');
+
+      loadingScreen.classList.remove('hidden');
+      errorScreen.classList.add('hidden');
+      gameCard.classList.add('hidden');
+      startNowBtn.classList.add('hidden');
+      loadingBar.style.width = '15%';
+      loadingStatus.textContent = 'Connecting to live NBA APIs & MPG stats...';
+      logEl.innerHTML = `<div class="text-zinc-500">[0.0s] Protocol: ${window.location.protocol} — Starting live NBA roster &amp; MPG pipeline...</div>`;
+
+      fetchLiveNbaPlayers(sessionId);
+    }
+
+    /**
+     * Display the completed Daily Gauntlet screen with the user's score & Global Leaderboard
+     */
+    function showDailyCompletedScreen(record, justFinished = false) {
+      document.getElementById('daily-start-screen').classList.add('hidden');
+      document.getElementById('card-surface').classList.add('hidden');
+      document.getElementById('daily-timer-header').classList.add('hidden');
+      document.getElementById('daily-gameover-screen').classList.remove('hidden');
+
+      const pillEl = document.getElementById('daily-status-pill');
+      if (pillEl) {
+        pillEl.textContent = justFinished
+          ? "Time's Up! • Posted to Leaderboard"
+          : 'Daily Gauntlet Already Completed Today';
+      }
+
+      const usernameEl = document.getElementById('daily-completed-username');
+      if (usernameEl) usernameEl.textContent = record.name || 'Player';
+
+      document.getElementById('daily-final-score').textContent = String(record.score || 0);
+      updateEstCountdowns();
+
+      const missedBox = document.getElementById('daily-missed-player-box');
+      const missed = record.missedPlayer;
+      if (missed && missed.fullName) {
+        missedBox.classList.remove('hidden');
+        const missedImg = document.getElementById('daily-missed-img');
+        missedImg.onerror = () => {
+          missedImg.src = missed.fallbackHeadshot || 'https://placehold.co/120x120/18181b/f97316?text=NBA';
+        };
+        missedImg.src = missed.headshot;
+        document.getElementById('daily-missed-name').textContent = missed.fullName;
+        const mpgText = typeof missed.mpg === 'number' && missed.mpg > 0 ? ` • ${missed.mpg.toFixed(1)} MPG` : '';
+        document.getElementById('daily-missed-meta').textContent = `${missed.teamName} • #${missed.jersey} • ${missed.position}${mpgText}`;
+      } else {
+        missedBox.classList.add('hidden');
+      }
+
+      renderGlobalLeaderboard();
+    }
+
+    /**
+     * Switch between 'daily' (Daily Gauntlet) and 'infinite' (Infinite)
+     */
+    function setGameMode(mode) {
+      state.gameMode = mode;
+      stopDailyTimer();
+
+      const dailyBtn = document.getElementById('mode-daily-btn');
+      const infiniteBtn = document.getElementById('mode-infinite-btn');
+      const infiniteControlsRight = document.getElementById('infinite-controls-right');
+
+      const dailyStartScreen = document.getElementById('daily-start-screen');
+      const dailyGameoverScreen = document.getElementById('daily-gameover-screen');
+      const cardSurface = document.getElementById('card-surface');
+      const dailyTimerHeader = document.getElementById('daily-timer-header');
+
+      if (mode === 'daily') {
+        dailyBtn.className = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5';
+        infiniteBtn.className = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5';
+        infiniteControlsRight.classList.add('hidden');
+
+        state.dailyRunning = false;
+        rebuildDailySeedPool();
+
+        // Enforce once-per-day device completion check
+        const existingRecord = getDailyCompletionRecord();
+        if (existingRecord) {
+          showDailyCompletedScreen(existingRecord, false);
+          return;
+        }
+
+        // Pre-fill saved player name if available
+        const nameInput = document.getElementById('daily-player-name-input');
+        const savedName = safeGetStorage('ebk_player_name');
+        if (nameInput && savedName && !nameInput.value.trim()) {
+          nameInput.value = savedName;
+        }
+
+        dailyStartScreen.classList.remove('hidden');
+        dailyGameoverScreen.classList.add('hidden');
+        cardSurface.classList.add('hidden');
+        dailyTimerHeader.classList.add('hidden');
+      } else {
+        infiniteBtn.className = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5';
+        dailyBtn.className = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5';
+        infiniteControlsRight.classList.remove('hidden');
+
+        state.dailyRunning = false;
+        dailyStartScreen.classList.add('hidden');
+        dailyGameoverScreen.classList.add('hidden');
+        dailyTimerHeader.classList.add('hidden');
+        cardSurface.classList.remove('hidden');
+
+        document.getElementById('roster-mode-badge').textContent = 'Active NBA Roster';
+        state.roundNumber = 0;
+        nextRound();
+      }
+    }
+
+    /**
+     * =========================================================================
+     * DAILY GAUNTLET (10-SECOND SHOT CLOCK + ONCE-PER-DAY GLOBAL LEADERBOARD)
+     * =========================================================================
+     */
+    function startDailyGauntlet() {
+      // Block replay if this device already completed today's Daily Gauntlet
+      const existingRecord = getDailyCompletionRecord();
+      if (existingRecord) {
+        showDailyCompletedScreen(existingRecord, false);
+        return;
+      }
+
+      const nameInput = document.getElementById('daily-player-name-input');
+      const nameError = document.getElementById('daily-name-error');
+      const enteredName = nameInput ? nameInput.value.trim() : '';
+
+      if (!enteredName) {
+        if (nameError) nameError.classList.remove('hidden');
+        if (nameInput) {
+          nameInput.classList.remove('animate-shake');
+          void nameInput.offsetWidth;
+          nameInput.classList.add('animate-shake', 'border-red-500');
+          nameInput.focus();
+        }
+        return;
+      }
+
+      if (nameError) nameError.classList.add('hidden');
+      if (nameInput) nameInput.classList.remove('border-red-500');
+
+      state.playerName = enteredName;
+      safeSetStorage('ebk_player_name', enteredName);
+
+      rebuildDailySeedPool();
+      if (state.dailySeedPool.length === 0) return;
+
+      state.dailyRunning = true;
+      state.dailyIndex = 0;
+      state.dailyScore = 0;
+      state.roundNumber = 0;
+
+      document.getElementById('daily-start-screen').classList.add('hidden');
+      document.getElementById('daily-gameover-screen').classList.add('hidden');
+      document.getElementById('card-surface').classList.remove('hidden');
+      document.getElementById('daily-timer-header').classList.remove('hidden');
+      document.getElementById('daily-live-score').textContent = '0';
+      document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet';
+      document.getElementById('give-up-btn').classList.add('hidden');
+
+      loadDailyPlayer(0);
+      resetAndStartDailyTimer();
+    }
+
+    function loadDailyPlayer(index) {
+      if (state.dailySeedPool.length === 0) return;
+      state.dailyIndex = index;
+      const poolLen = state.dailySeedPool.length;
+      const player = state.dailySeedPool[index % poolLen];
+
+      state.currentPlayer = player;
+      state.roundNumber = index + 1;
+      state.roundAnswered = false;
+      state.hintsRevealed = 0;
+      state.wrongAttempts = 0;
+
+      preparePlayerCardUI();
+    }
+
+    function resetAndStartDailyTimer() {
+      stopDailyTimer();
+      state.dailyTimerRemaining = state.dailyTimerDuration;
+      state.dailyLastFrameTime = performance.now();
+      updateDailyTimerVisuals(state.dailyTimerRemaining);
+
+      const tick = (now) => {
+        if (!state.dailyRunning || state.gameMode !== 'daily') return;
+        const dt = (now - state.dailyLastFrameTime) / 1000;
+        state.dailyLastFrameTime = now;
+        state.dailyTimerRemaining = Math.max(0, state.dailyTimerRemaining - dt);
+
+        updateDailyTimerVisuals(state.dailyTimerRemaining);
+
+        if (state.dailyTimerRemaining <= 0) {
+          handleDailyTimeExpired();
+          return;
+        }
+        state.dailyRafId = requestAnimationFrame(tick);
+      };
+
+      state.dailyRafId = requestAnimationFrame(tick);
+    }
+
+    function stopDailyTimer() {
+      if (state.dailyRafId !== null) {
+        cancelAnimationFrame(state.dailyRafId);
+        state.dailyRafId = null;
+      }
+    }
+
+    function updateDailyTimerVisuals(remaining) {
+      const pct = Math.max(0, Math.min(100, (remaining / state.dailyTimerDuration) * 100));
+      const textEl = document.getElementById('daily-timer-text');
+      const barEl = document.getElementById('daily-timer-bar');
+
+      if (textEl) {
+        textEl.textContent = `${remaining.toFixed(1)}s`;
+        if (remaining <= 2.5) {
+          textEl.className = 'text-base font-black text-red-400 tabular-nums animate-pulse';
+        } else if (remaining <= 5.0) {
+          textEl.className = 'text-base font-black text-amber-400 tabular-nums';
+        } else {
+          textEl.className = 'text-base font-black text-emerald-400 tabular-nums';
+        }
+      }
+
+      if (barEl) {
+        barEl.style.width = `${pct}%`;
+        if (remaining <= 2.5) {
+          barEl.className = 'h-full bg-red-500 rounded-full transition-none';
+        } else if (remaining <= 5.0) {
+          barEl.className = 'h-full bg-amber-400 rounded-full transition-none';
+        } else {
+          barEl.className = 'h-full bg-emerald-500 rounded-full transition-none';
+        }
+      }
+    }
+
+    async function handleDailyTimeExpired() {
+      stopDailyTimer();
+      state.dailyRunning = false;
+      state.roundAnswered = true;
+
+      const missed = state.currentPlayer;
+      const completionRecord = {
+        name: state.playerName || safeGetStorage('ebk_player_name') || 'Player',
+        score: state.dailyScore,
+        missedPlayer: missed ? {
+          fullName: missed.fullName,
+          teamName: missed.teamName,
+          jersey: missed.jersey,
+          position: missed.position,
+          mpg: missed.mpg,
+          headshot: missed.headshot,
+          fallbackHeadshot: missed.fallbackHeadshot
+        } : null,
+        completedAt: Date.now()
+      };
+
+      // Lock this device for the rest of today's EST day and automatically post to Global Leaderboard
+      saveDailyCompletionRecord(completionRecord);
+      await postScoreToGlobalLeaderboard({
+        name: completionRecord.name,
+        score: completionRecord.score,
+        completedAt: completionRecord.completedAt
+      });
+
+      showDailyCompletedScreen(completionRecord, true);
+    }
+
+    /**
+     * =========================================================================
+     * INFINITE MODE & SHARED CARD UI
+     * =========================================================================
+     */
+    function pickRandomInfinitePlayer() {
+      const validPool = state.players.filter(p => !state.brokenImageIds.has(p.id));
+      if (validPool.length === 0) return null;
+
+      if (state.usedInfiniteIds.size >= validPool.length) {
+        state.usedInfiniteIds.clear();
+      }
+      const unseen = validPool.filter(p => !state.usedInfiniteIds.has(p.id));
+      const pool = unseen.length > 0 ? unseen : validPool;
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      if (chosen) state.usedInfiniteIds.add(chosen.id);
+      return chosen;
+    }
+
+    function nextRound() {
+      const nextPlayer = pickRandomInfinitePlayer();
+      if (!nextPlayer) return;
+
+      state.roundNumber++;
+      state.roundAnswered = false;
+      state.hintsRevealed = 0;
+      state.wrongAttempts = 0;
+      state.currentPlayer = nextPlayer;
+
+      preparePlayerCardUI();
+    }
+
+    function preparePlayerCardUI() {
+      const reqToken = ++state.imageRequestToken;
+      const playerSnapshot = state.currentPlayer;
+
+      document.getElementById('round-indicator').textContent = `Player #${state.roundNumber}`;
+      document.getElementById('hints-container').innerHTML = '';
+      document.getElementById('hint-btn-label').textContent = 'Hint (0/3)';
+      document.getElementById('hint-toggle-btn').disabled = false;
+      document.getElementById('hint-toggle-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+
+      document.getElementById('reveal-banner').classList.add('hidden');
+      document.getElementById('next-action-container').classList.add('hidden');
+      document.getElementById('card-surface').className =
+        'bg-zinc-900/90 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+      document.getElementById('player-glow').className =
+        'absolute inset-0 bg-orange-500/10 blur-2xl rounded-full transition-colors duration-300';
+
+      const inputEl = document.getElementById('player-input');
+      const submitBtn = document.getElementById('submit-guess-btn');
+      const feedbackEl = document.getElementById('inline-feedback');
+
+      inputEl.value = '';
+      inputEl.disabled = false;
+      inputEl.className =
+        'flex-1 bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 text-sm sm:text-base font-semibold outline-none transition';
+      submitBtn.disabled = false;
+
+      feedbackEl.className = 'font-semibold text-zinc-500';
+      feedbackEl.textContent = 'Enter player name and press Enter.';
+
+      if (state.gameMode === 'infinite') {
+        document.getElementById('give-up-btn').classList.remove('hidden');
+      } else {
+        document.getElementById('give-up-btn').classList.add('hidden');
+      }
+
+      const imgEl = document.getElementById('player-headshot');
+      const skeletonEl = document.getElementById('img-skeleton');
+
+      // Clear previous src immediately so an old player's headshot never lingers on screen
+      imgEl.onload = null;
+      imgEl.onerror = null;
+      imgEl.alt = 'Mystery NBA Player';
+      imgEl.removeAttribute('src');
+      imgEl.classList.add('opacity-0', 'scale-95');
+      skeletonEl.classList.remove('hidden');
+
+      let triedFallback = false;
+      imgEl.onload = () => {
+        if (reqToken !== state.imageRequestToken) return;
+        skeletonEl.classList.add('hidden');
+        imgEl.classList.remove('opacity-0', 'scale-95');
+      };
+      imgEl.onerror = () => {
+        if (reqToken !== state.imageRequestToken) return;
+        if (!triedFallback && playerSnapshot.fallbackHeadshot && playerSnapshot.fallbackHeadshot !== imgEl.src) {
+          triedFallback = true;
+          imgEl.src = playerSnapshot.fallbackHeadshot;
+        } else {
+          // Mark player's image as broken and seamlessly skip to next player if possible
+          state.brokenImageIds.add(playerSnapshot.id);
+          if (state.gameMode === 'daily' && state.dailyRunning) {
+            rebuildDailySeedPool();
+            if (state.dailySeedPool.length > 0) {
+              loadDailyPlayer(state.dailyIndex);
+              return;
+            }
+          } else if (state.gameMode === 'infinite' && state.players.length - state.brokenImageIds.size >= 4) {
+            state.roundNumber = Math.max(0, state.roundNumber - 1);
+            nextRound();
+            return;
+          }
+          skeletonEl.classList.add('hidden');
+          const jerseyLabel = playerSnapshot.jersey && playerSnapshot.jersey !== '?'
+            ? `#${playerSnapshot.jersey} • ${playerSnapshot.teamAbbr || 'NBA'}`
+            : (playerSnapshot.teamName || 'NBA Player');
+          imgEl.src = 'https://placehold.co/350x260/18181b/f97316?text=' + encodeURIComponent(jerseyLabel);
+          imgEl.classList.remove('opacity-0', 'scale-95');
+        }
+      };
+      imgEl.src = playerSnapshot.headshot;
+
+      setTimeout(() => inputEl.focus(), 30);
+    }
+
+    function revealNextHint() {
+      if (state.gameMode !== 'infinite' || state.roundAnswered || state.hintsRevealed >= 3 || !state.currentPlayer) return;
+
+      state.hintsRevealed++;
+      const p = state.currentPlayer;
+      const container = document.getElementById('hints-container');
+      const pill = document.createElement('span');
+      pill.className =
+        'animate-pop px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30 max-w-full truncate';
+
+      if (state.hintsRevealed === 1) {
+        pill.textContent = `Position: ${p.position}`;
+      } else if (state.hintsRevealed === 2) {
+        pill.textContent = p.teamName && p.teamName !== 'Active NBA Roster'
+          ? `Team: ${p.teamName}`
+          : `Clue: ${p.bioHint || 'NBA Star'}`;
+      } else if (state.hintsRevealed === 3) {
+        const initials = p.fullName.split(/\s+/).map(w => w[0] + '.').join(' ');
+        pill.textContent = `Initials: ${initials}`;
+      }
+
+      container.appendChild(pill);
+      document.getElementById('hint-btn-label').textContent = `Hint (${state.hintsRevealed}/3)`;
+
+      if (state.hintsRevealed >= 3) {
+        const btn = document.getElementById('hint-toggle-btn');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    /**
+     * =========================================================================
+     * LENIENT NAME, VARIANT & STAR NICKNAME MATCHING ENGINE
+     * =========================================================================
+     */
+    const FIRST_NAME_VARIANT_GROUPS = [
+      ['isiah', 'isaiah', 'izayah'],
+      ['jon', 'john', 'johnny', 'jonathan', 'johnathan'],
+      ['nic', 'nick', 'nicolas', 'nicholas', 'nikola', 'nik'],
+      ['cam', 'cameron', 'camryn'],
+      ['jakob', 'jacob', 'jake'],
+      ['alex', 'alexander', 'aleksandar', 'aleksej'],
+      ['shaun', 'shawn', 'sean'],
+      ['danny', 'dani', 'daniel', 'dan'],
+      ['chris', 'christian', 'kristaps', 'kris'],
+      ['deandre', 'de andre', 'andre'],
+      ['pj', 'p j'],
+      ['cj', 'c j'],
+      ['rj', 'r j'],
+      ['og', 'o g'],
+      ['jj', 'j j'],
+      ['tj', 't j'],
+      ['aj', 'a j'],
+      ['dj', 'd j'],
+      ['kj', 'k j'],
+      ['jt', 'j t'],
+      ['jb', 'j b'],
+      ['ad', 'a d'],
+      ['kd', 'k d'],
+      ['pg', 'p g'],
+      ['kp', 'k p'],
+      ['cp3', 'chris paul'],
+      ['michael', 'mike', 'mikal', 'mychal'],
+      ['anthony', 'ant', 'tony'],
+      ['stephen', 'steph', 'steven', 'steve'],
+      ['tyrese', 'ty'],
+      ['jalen', 'jaylen', 'jaylin', 'jalin'],
+      ['jaden', 'jayson', 'jason', 'jaeden', 'jayden'],
+      ['trey', 'trae', 'tre'],
+      ['fred', 'freddie', 'frederick'],
+      ['matthew', 'matt', 'matas'],
+      ['robert', 'rob', 'bobby'],
+      ['william', 'will', 'billy'],
+      ['timothy', 'tim', 'timmy'],
+      ['kenneth', 'kenny', 'ken'],
+      ['jerami', 'jeremy', 'jeremiah'],
+      ['derrick', 'derek', 'dereck'],
+      ['eric', 'erik'],
+      ['marc', 'mark'],
+      ['keegan', 'keon'],
+      ['zach', 'zachary', 'zak'],
+      ['josh', 'joshua'],
+      ['ben', 'benn', 'bennedict', 'benjamin'],
+      ['domantas', 'domas'],
+      ['alperen', 'alpi'],
+      ['jonas', 'jv']
+    ];
+
+    const STAR_ALIASES = {
+      'giannis antetokounmpo': ['giannis', 'greek freak', 'the greek freak', 'antetokounmpo', 'alphabet'],
+      'shai gilgeous alexander': ['sga', 'shai', 'gilgeous', 'gilgeous alexander'],
+      'lebron james': ['lebron', 'king james', 'bron', 'the king', 'lbj'],
+      'stephen curry': ['steph', 'steph curry', 'curry', 'chef curry', 'wardell'],
+      'kevin durant': ['kd', 'durant', 'easy money sniper', 'slim reaper'],
+      'anthony davis': ['ad', 'the brow', 'brow'],
+      'nikola jokic': ['jokic', 'joker', 'the joker', 'big honey'],
+      'luka doncic': ['luka', 'luka magic', 'doncic'],
+      'victor wembanyama': ['wemby', 'wembanyama', 'the alien', 'alien'],
+      'anthony edwards': ['ant', 'ant man', 'antman'],
+      'ja morant': ['ja', 'morant'],
+      'zion williamson': ['zion'],
+      'kyrie irving': ['kyrie', 'uncle drew'],
+      'kawhi leonard': ['kawhi', 'the claw', 'klaw'],
+      'paul george': ['pg', 'pg13', 'playoff p'],
+      'damian lillard': ['dame', 'dame time', 'dame dolla', 'lillard'],
+      'devin booker': ['book', 'dbook', 'booker'],
+      'karl anthony towns': ['kat', 'towns'],
+      'kristaps porzingis': ['kp', 'porzingis', 'unicorn', 'tingus pingus'],
+      'bam adebayo': ['bam', 'adebayo'],
+      'jimmy butler': ['jimmy', 'jimmy buckets', 'himmy butler'],
+      'chris paul': ['cp3', 'point god'],
+      'russell westbrook': ['russ', 'brodie', 'westbrook', 'mr triple double'],
+      'james harden': ['harden', 'the beard', 'beard'],
+      'joel embiid': ['embiid', 'joel', 'the process'],
+      'jayson tatum': ['tatum', 'jt'],
+      'jaylen brown': ['jaylen', 'jb'],
+      'jalen brunson': ['brunson', 'jb'],
+      'tyrese haliburton': ['haliburton', 'halliburton', 'hali'],
+      'lamelo ball': ['lamelo', 'melo'],
+      'lonzo ball': ['lonzo', 'zo'],
+      'trae young': ['trae', 'ice trae'],
+      'deaaron fox': ['fox', 'swipa', 'dearon fox'],
+      'domantas sabonis': ['sabonis', 'domas'],
+      'paolo banchero': ['paolo', 'banchero'],
+      'chet holmgren': ['chet', 'holmgren'],
+      'scottie barnes': ['scottie', 'sct brn'],
+      'cade cunningham': ['cade', 'cunningham'],
+      'alperen sengun': ['sengun', 'alperen'],
+      'franz wagner': ['franz'],
+      'lauri markkanen': ['lauri', 'markkanen', 'finnisher'],
+      'donovan mitchell': ['spida', 'donovan', 'mitchell'],
+      'darius garland': ['dg', 'garland'],
+      'evan mobley': ['mobley'],
+      'tyrese maxey': ['maxey'],
+      'pascal siakam': ['pascal', 'spicy p', 'siakam'],
+      'bennedict mathurin': ['mathurin', 'benn mathurin'],
+      'jonathan kuminga': ['kuminga', 'jk'],
+      'klay thompson': ['klay'],
+      'draymond green': ['draymond', 'dray'],
+      'austin reaves': ['ar15', 'reaves', 'hillbilly kobe'],
+      'jrue holiday': ['jrue'],
+      'derrick white': ['buffalo', 'the buffalo'],
+      'deandre ayton': ['ayton', 'dominayton'],
+      'julius randle': ['randle'],
+      'rudy gobert': ['gobert', 'rudy', 'stifle tower'],
+      'naz reid': ['naz', 'naz reid'],
+      'amen thompson': ['amen'],
+      'ausar thompson': ['ausar'],
+      'nickeil alexander walker': ['naw', 'alexander walker'],
+      'jaren jackson': ['jjj', 'jaren jackson'],
+      'desmond bane': ['bane'],
+      'al horford': ['horford', 'big al'],
+      'brook lopez': ['splash mountain'],
+      'khris middleton': ['khash', 'middleton'],
+      'isaiah hartenstein': ['ihart', 'hartenstein', 'isiah hartenstein'],
+      'isiah stewart': ['beef stew', 'isaiah stewart', 'stewart'],
+      'isaiah stewart': ['beef stew', 'isiah stewart', 'stewart'],
+      'isaiah joe': ['isiah joe'],
+      'isaiah collier': ['isiah collier', 'collier'],
+      'isaiah jackson': ['isiah jackson'],
+      'luguentz dort': ['lu dort', 'dort', 'luguentz'],
+      'alex caruso': ['caruso', 'bald mamba', 'carushow'],
+      'jalen williams': ['jdub', 'j dub'],
+      'jaylin williams': ['jwill', 'j will'],
+      'kenrich williams': ['kenny hustle'],
+      'herb jones': ['herb', 'herbert jones'],
+      'herbert jones': ['herb', 'herb jones'],
+      'trey murphy': ['trey murphy'],
+      'cj mccollum': ['cj', 'mccollum'],
+      'brandon ingram': ['bi', 'ingram'],
+      'dejounte murray': ['dejounte'],
+      'og anunoby': ['og', 'anunoby'],
+      'mikal bridges': ['mikal'],
+      'josh hart': ['hart'],
+      'mitchell robinson': ['mitch', 'mitch rob'],
+      'immanuel quickley': ['iq', 'quickley'],
+      'rj barrett': ['rj', 'barrett'],
+      'jakob poeltl': ['poeltl', 'jacob poeltl'],
+      'gradey dick': ['gradey'],
+      'ivica zubac': ['zu', 'zubac'],
+      'norman powell': ['norm', 'norm powell'],
+      'terance mann': ['tmann', 'terance mann'],
+      'malik monk': ['monk'],
+      'keegan murray': ['keegan'],
+      'demar derozan': ['demar', 'derozan', 'deebo'],
+      'zach lavine': ['lavine'],
+      'nikola vucevic': ['vooch', 'vucevic'],
+      'coby white': ['coby'],
+      'ayo dosunmu': ['ayo', 'dosunmu'],
+      'matas buzelis': ['matas', 'buzelis'],
+      'brandon miller': ['bmiller', 'brandon miller'],
+      'miles bridges': ['miles bridges'],
+      'mark williams': ['mark williams'],
+      'jarrett allen': ['fro', 'the fro', 'jarrett allen'],
+      'caris levert': ['caris', 'levert'],
+      'max strus': ['strus'],
+      'myles turner': ['myles turner'],
+      'andrew nembhard': ['nembhard'],
+      'obi toppin': ['obi', 'toppin'],
+      'tj mcconnell': ['tj', 'mcconnell'],
+      'jamal murray': ['jamal', 'blue arrow'],
+      'michael porter': ['mpj', 'michael porter'],
+      'aaron gordon': ['ag', 'aaron gordon'],
+      'kentavious caldwell pope': ['kcp', 'caldwell pope'],
+      'christian braun': ['braun'],
+      'bradley beal': ['beal'],
+      'jusuf nurkic': ['nurk', 'nurkic'],
+      'grayson allen': ['grayson'],
+      'tyus jones': ['tyus'],
+      'anfernee simons': ['ant simons', 'anfernee', 'simons'],
+      'shaedon sharpe': ['shaedon', 'sharpe'],
+      'scoot henderson': ['scoot'],
+      'jerami grant': ['jerami'],
+      'deni avdija': ['deni', 'avdija'],
+      'donovan clingan': ['clingan'],
+      'jabari smith': ['jabari'],
+      'jalen green': ['jalen green'],
+      'fred vanvleet': ['fvv', 'vanvleet'],
+      'dillon brooks': ['dillon brooks', 'villain'],
+      'tari eason': ['tari', 'eason'],
+      'cam whitmore': ['cam whitmore'],
+      'reed sheppard': ['reed', 'sheppard'],
+      'steven adams': ['aquaman', 'steven adams'],
+      'dangelo russell': ['dlo', 'd lo'],
+      'rui hachimura': ['rui', 'hachimura'],
+      'jarred vanderbilt': ['vando', 'vanderbilt'],
+      'dalton knecht': ['knecht'],
+      'tyler herro': ['herro', 'boy wonder'],
+      'terry rozier': ['scary terry', 'rozier'],
+      'jaime jaquez': ['jaime', 'jaquez'],
+      'nikola jovic': ['jovic'],
+      'kel el ware': ['ware', 'kelel ware'],
+      'kyle kuzma': ['kuz', 'kuzma'],
+      'jordan poole': ['poole', 'jp'],
+      'alex sarr': ['sarr'],
+      'bilal coulibaly': ['bilal', 'coulibaly'],
+      'jonas valanciunas': ['jv', 'valanciunas'],
+      'malcolm brogdon': ['brogdon'],
+      'cam thomas': ['cam thomas'],
+      'cameron johnson': ['cam johnson'],
+      'nic claxton': ['claxton', 'nick claxton'],
+      'dennis schroder': ['schroder', 'dennis'],
+      'dorian finney smith': ['dfs', 'finney smith'],
+      'ben simmons': ['ben simmons'],
+      'devin vassell': ['vassell'],
+      'jeremy sochan': ['sochan'],
+      'stephon castle': ['castle', 'stephon castle'],
+      'keldon johnson': ['keldon', 'big body'],
+      'harrison barnes': ['hb', 'harrison barnes'],
+      'walker kessler': ['kessler'],
+      'collin sexton': ['sexton', 'young bull'],
+      'john collins': ['john collins', 'jc'],
+      'jordan clarkson': ['clarkson', 'jc'],
+      'keyonte george': ['keyonte'],
+      'taylor hendricks': ['hendricks'],
+      'zaccharie risacher': ['risacher', 'zaccharie'],
+      'jalen johnson': ['jalen johnson'],
+      'bogdan bogdanovic': ['bogi', 'bogdan', 'bogdanovic'],
+      'clint capela': ['capela'],
+      'onyeka okongwu': ['oo', 'okongwu'],
+      'dyson daniels': ['dyson', 'great barrier thief'],
+      'pj washington': ['pj', 'pj washington'],
+      'daniel gafford': ['gafford'],
+      'dereck lively': ['lively', 'derek lively'],
+      'spencer dinwiddie': ['dinwiddie'],
+      'naji marshall': ['naji'],
+      'quentin grimes': ['grimes']
+    };
+
+    function normalizeName(str) {
+      return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/['’.-]/g, ' ')
+        .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function editDistance(a, b) {
+      const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+      for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return matrix[a.length][b.length];
+    }
+
+    function getFirstNameVariants(firstNameNorm) {
+      const variants = new Set([firstNameNorm]);
+      for (const group of FIRST_NAME_VARIANT_GROUPS) {
+        if (group.includes(firstNameNorm)) {
+          group.forEach(v => variants.add(v));
+        }
+      }
+      return Array.from(variants);
+    }
+
+    /**
+     * Checks whether a player's normalized first name is unique across the active NBA player pool
+     * (e.g. Giannis, Shai, Yanic, LeBron, Luka, Victor, Kyrie, Zion, Kawhi, Paolo, Chet, Cade, etc.)
+     */
+    function isUniqueFirstNameInPool(targetFirst, player) {
+      if (!targetFirst || targetFirst.length < 3) return false;
+      const targetGroup = getFirstNameVariants(targetFirst);
+      let matchCount = 0;
+
+      for (const p of state.players) {
+        const pNorm = normalizeName(p.fullName);
+        const pFirst = pNorm.split(' ')[0] || '';
+        if (pFirst === targetFirst || targetGroup.includes(pFirst)) {
+          matchCount++;
+          if (matchCount > 1) return false;
+        }
+      }
+      return matchCount === 1;
+    }
+
+    function isGuessCorrectForPlayer(guessRaw, player) {
+      const guess = normalizeName(guessRaw);
+      if (!guess) return false;
+
+      const targetFull = normalizeName(player.fullName);
+      const targetParts = targetFull.split(' ').filter(Boolean);
+      const targetFirst = targetParts[0] || '';
+      const targetLast = targetParts.slice(1).join(' ') || targetFirst;
+      const targetSurname = targetParts[targetParts.length - 1] || targetLast;
+      const guessCompact = guess.replace(/\s+/g, '');
+
+      // 1. Exact full name, last name, or trailing surname token match (e.g. "Niederhauser" for "Yanic Konan Niederhauser")
+      if (guess === targetFull) return true;
+      if (targetLast.length >= 3 && guess === targetLast) return true;
+      if (targetSurname.length >= 4 && guess === targetSurname) return true;
+      if (guessCompact === targetFull.replace(/\s+/g, '')) return true;
+      if (targetLast.length >= 4 && guessCompact === targetLast.replace(/\s+/g, '')) return true;
+
+      // 2. Unique first name across the NBA pool (e.g. "Giannis", "Shai", "Yanic", "LeBron", "Wemby"/"Victor")
+      if (isUniqueFirstNameInPool(targetFirst, player)) {
+        if (guess === targetFirst) return true;
+        if (targetFirst.length >= 6 && editDistance(guess, targetFirst) <= 1) return true;
+      }
+
+      // 3. Star Nicknames, Initials & Mononyms check
+      const aliases = STAR_ALIASES[targetFull] || [];
+      for (const alias of aliases) {
+        const normAlias = normalizeName(alias);
+        if (guess === normAlias || guessCompact === normAlias.replace(/\s+/g, '')) {
+          return true;
+        }
+        if (normAlias.length >= 5 && editDistance(guess, normAlias) <= 1) {
+          return true;
+        }
+      }
+
+      // 4. Interchangeable First-Name Variants + Last Name
+      if (targetParts.length >= 2) {
+        const firstVariants = getFirstNameVariants(targetFirst);
+        for (const fVar of firstVariants) {
+          const variantFull = `${fVar} ${targetLast}`.trim();
+          if (guess === variantFull) return true;
+          if (variantFull.length >= 6 && editDistance(guess, variantFull) <= 2) return true;
+        }
+      }
+
+      // 5. Forgiving Levenshtein Typo Tolerance on Full Name, Last Name, and Trailing Surname
+      if (targetFull.length >= 5 && editDistance(guess, targetFull) <= 2) return true;
+      if (targetLast.length >= 5 && editDistance(guess, targetLast) <= 1) return true;
+      if (targetLast.length >= 8 && editDistance(guess, targetLast) <= 2) return true;
+      if (targetSurname.length >= 6 && editDistance(guess, targetSurname) <= 1) return true;
+
+      return false;
+    }
+
+    /**
+     * Evaluate Typed Name Guess
+     */
+    function handleTypedSubmit(e) {
+      e.preventDefault();
+      if (state.roundAnswered || !state.currentPlayer) return;
+      if (state.gameMode === 'daily' && !state.dailyRunning) return;
+
+      const inputEl = document.getElementById('player-input');
+      const feedbackEl = document.getElementById('inline-feedback');
+      const rawGuess = inputEl.value;
+
+      if (!rawGuess.trim()) {
+        inputEl.focus();
+        return;
+      }
+
+      const correct = isGuessCorrectForPlayer(rawGuess, state.currentPlayer);
+
+      if (!correct) {
+        state.wrongAttempts++;
+        inputEl.classList.remove('animate-shake');
+        void inputEl.offsetWidth;
+        inputEl.classList.add('animate-shake', 'border-red-500', 'focus:border-red-500');
+
+        feedbackEl.className = 'font-bold text-red-400 flex items-center gap-1.5';
+        feedbackEl.textContent = `✕ "${rawGuess.trim()}" is wrong — keep guessing!`;
+
+        inputEl.select();
+        inputEl.focus();
+        return;
+      }
+
+      if (state.gameMode === 'daily') {
+        state.dailyScore++;
+        document.getElementById('daily-live-score').textContent = String(state.dailyScore);
+
+        const solvedName = state.currentPlayer.fullName;
+        loadDailyPlayer(state.dailyIndex + 1);
+        resetAndStartDailyTimer();
+
+        const updatedFeedback = document.getElementById('inline-feedback');
+        updatedFeedback.className = 'font-bold text-emerald-400';
+        updatedFeedback.textContent = `✓ ${solvedName}! Clock reset to 10.0s!`;
+      } else {
+        finalizeInfiniteRound(true);
+      }
+    }
+
+    /**
+     * Reveal current player in Infinite Mode ("I don't know" button)
+     */
+    function skipPlayer() {
+      if (state.gameMode !== 'infinite' || state.roundAnswered) return;
+      finalizeInfiniteRound(false);
+    }
+
+    /**
+     * Finalize an Infinite Mode round (either solved or revealed)
+     */
+    function finalizeInfiniteRound(isCorrect) {
+      state.roundAnswered = true;
+
+      const inputEl = document.getElementById('player-input');
+      const submitBtn = document.getElementById('submit-guess-btn');
+      const giveUpBtn = document.getElementById('give-up-btn');
+      const feedbackEl = document.getElementById('inline-feedback');
+
+      inputEl.disabled = true;
+      submitBtn.disabled = true;
+      giveUpBtn.classList.add('hidden');
+
+      const p = state.currentPlayer;
+      const banner = document.getElementById('reveal-banner');
+      const badge = document.getElementById('result-badge');
+      const cardSurface = document.getElementById('card-surface');
+      const glow = document.getElementById('player-glow');
+
+      document.getElementById('player-headshot').alt = p.fullName;
+      banner.classList.remove('hidden');
+      banner.classList.add('animate-pop');
+
+      if (isCorrect) {
+        inputEl.classList.remove('border-red-500');
+        inputEl.classList.add('border-emerald-500');
+        feedbackEl.className = 'font-bold text-emerald-400';
+        feedbackEl.textContent = '✓ Spot on!';
+
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.textContent = '✓ Correct!';
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-emerald-500/60 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full transition-colors duration-300';
+      } else {
+        feedbackEl.className = 'font-semibold text-zinc-400';
+        feedbackEl.textContent = 'Player revealed.';
+
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-1 bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        badge.textContent = 'Revealed';
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-amber-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-amber-500/20 blur-2xl rounded-full transition-colors duration-300';
+      }
+
+      document.getElementById('revealed-name').textContent = p.fullName;
+      const mpgText = typeof p.mpg === 'number' && p.mpg > 0 ? ` • ${p.mpg.toFixed(1)} MPG` : '';
+      document.getElementById('revealed-meta').textContent = `${p.teamName} • #${p.jersey} • ${p.position}${mpgText}`;
+      document.getElementById('next-action-container').classList.remove('hidden');
+      document.getElementById('next-player-btn').focus();
+    }
+
+    /**
+     * Keyboard shortcut: Enter advances to Next Player in Infinite mode after round ends
+     */
+    document.addEventListener('keydown', (e) => {
+      if (state.gameMode === 'infinite' && state.roundAnswered && e.key === 'Enter') {
+        if (document.activeElement?.tagName !== 'BUTTON') {
+          e.preventDefault();
+          nextRound();
+        }
+      }
+    });
+
+    // Boot synchronously on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        updateEstCountdowns();
+        initGame();
+      });
+    } else {
+      updateEstCountdowns();
+      initGame();
+    }
+  </script>
+</body>
+</html>
