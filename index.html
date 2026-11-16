@@ -245,12 +245,6 @@
 
         <!-- DAILY GAUNTLET: Pre-Start Lobby Screen -->
         <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold mb-4">
-            <span>DAILY GAUNTLET</span>
-            <span>•</span>
-            <span id="daily-date-label">EST</span>
-          </div>
-
           <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">10-Second Daily Gauntlet</h2>
           <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
             Name as many current NBA players from today's pool. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
@@ -543,7 +537,8 @@
       playerMap: new Map(),    // Deduplicated player registry keyed by canonical ID
       brokenImageIds: new Set(),
       dailySeedPool: [],       // Deterministic daily seed of players averaging >= 10.0 MPG
-      dailyFilterActive: false,// True when real ESPN >= 10 MPG stats filter is applied
+      dailyFilterActive: false,// True when real ESPN > 10.0 MPG stats filter is applied
+      mpgSyncComplete: false,  // True once current-season MPG stats finish loading
       usedInfiniteIds: new Set(),
       currentPlayer: null,
       imageRequestToken: 0,    // Guards against stale image onload race conditions
@@ -694,11 +689,12 @@
 
     /**
      * Build the deterministic Daily Gauntlet Pool for today's EST date
+     * Strictly includes only current NBA players averaging > 10.0 MPG this season.
      */
     function rebuildDailySeedPool() {
       const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
-      const qualifiedByMpg = validPlayers.filter(p => typeof p.mpg === 'number' && p.mpg >= 10.0);
-      const useMpgFilter = qualifiedByMpg.length >= 12;
+      const qualifiedByMpg = validPlayers.filter(p => typeof p.mpg === 'number' && p.mpg > 10.0);
+      const useMpgFilter = qualifiedByMpg.length > 0;
       state.dailyFilterActive = useMpgFilter;
 
       const sourceList = useMpgFilter ? qualifiedByMpg : validPlayers;
@@ -718,11 +714,15 @@
 
       const poolSizeEl = document.getElementById('daily-pool-size');
       if (poolSizeEl) {
-        poolSizeEl.textContent = `${state.dailySeedPool.length} Players`;
+        if (state.mpgSyncComplete) {
+          poolSizeEl.textContent = `${state.dailySeedPool.length} Players (>10 MPG)`;
+        } else {
+          poolSizeEl.textContent = `${qualifiedByMpg.length} Players (>10 MPG)...`;
+        }
       }
       const badgeEl = document.getElementById('roster-mode-badge');
       if (badgeEl && state.gameMode === 'daily') {
-        badgeEl.textContent = 'Daily Gauntlet';
+        badgeEl.textContent = 'Daily Gauntlet (>10 MPG)';
       }
     }
 
@@ -750,20 +750,13 @@
       }));
     }
 
-    function buildSeededGlobalStandings(dateKey) {
-      const rng = mulberry32(hashString('EBK_GLOBAL_LB_' + dateKey));
-      const handles = [
-        'HoopsJunkie', 'MambaMentality24', 'CourtVision', 'BucketGetter',
-        'SplashZone30', 'RimProtector', 'SixthManOTY', 'IsoJoe',
-        'LogoLillard', 'BaselineFade'
-      ];
-      return handles.map((name, idx) => ({
-        id: `global_seed_${idx}`,
-        name,
-        score: Math.max(3, Math.floor(rng() * 24) + (10 - idx)),
-        completedAt: Date.now() - (idx + 1) * 420000,
-        isSelf: false
-      }));
+    function isRemoteLeaderboardEnabled() {
+      return Boolean(
+        GLOBAL_LEADERBOARD_CONFIG.supabaseUrl &&
+        GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim() &&
+        GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey &&
+        GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()
+      );
     }
 
     async function fetchGlobalLeaderboardEntries(dateKey) {
@@ -773,25 +766,24 @@
       if (raw) {
         try { localEntries = JSON.parse(raw) || []; } catch (_) {}
       }
-      if (!Array.isArray(localEntries) || localEntries.length === 0) {
-        localEntries = buildSeededGlobalStandings(dateKey);
-        safeSetStorage(storageKey, JSON.stringify(localEntries));
+      if (!Array.isArray(localEntries)) {
+        localEntries = [];
       }
 
-      if (GLOBAL_LEADERBOARD_CONFIG.supabaseUrl && GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey) {
+      if (isRemoteLeaderboardEnabled()) {
         try {
-          const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.replace(/\/$/, '');
+          const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
           const table = GLOBAL_LEADERBOARD_CONFIG.tableName || 'ebk_daily_leaderboard';
           const url = `${base}/rest/v1/${table}?daily_date=eq.${encodeURIComponent(dateKey)}&select=id,username,score,created_at&order=score.desc,created_at.asc&limit=50`;
           const res = await fetch(url, {
             headers: {
-              'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey,
-              'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey}`
+              'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim(),
+              'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()}`
             }
           });
           if (res.ok) {
             const rows = await res.json();
-            if (Array.isArray(rows) && rows.length > 0) {
+            if (Array.isArray(rows)) {
               const myRecord = getDailyCompletionRecord();
               return rows.map(r => ({
                 id: String(r.id),
@@ -860,7 +852,19 @@
 
     async function renderGlobalLeaderboard() {
       const listEl = document.getElementById('global-leaderboard-list');
+      const statusTag = document.getElementById('leaderboard-status-tag');
       if (!listEl) return;
+
+      if (statusTag) {
+        if (isRemoteLeaderboardEnabled()) {
+          statusTag.textContent = 'Live Global Sync';
+          statusTag.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+        } else {
+          statusTag.textContent = 'Device Scoreboard';
+          statusTag.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
+        }
+      }
+
       const { dateKey } = getEstDateInfo();
       const entries = await fetchGlobalLeaderboardEntries(dateKey);
 
@@ -1254,19 +1258,14 @@
               addPlayersToPool(mappedPlayers, 'ESPN Live Rosters');
               teamsCompleted++;
 
-              // Fire non-blocking MPG stats enrichment for this team
-              enrichTeamMpgInBackground(team.id, sessionId);
+              // Fetch current-season MPG stats for this team so >10 MPG filter is exact
+              await enrichTeamMpgInBackground(team.id, sessionId);
 
               if (!state.gameStarted) {
                 const pct = Math.min(95, 30 + Math.round((teamsCompleted / sortedTeams.length) * 65));
                 document.getElementById('loading-bar').style.width = `${pct}%`;
-                logDiag(`Loaded ${team.abbreviation || team.displayName} (${state.players.length} players in pool)`, 'ok');
-              }
-
-              // Launch immediately once first 3 teams (~25+ players) are loaded
-              if (!state.gameStarted && teamsCompleted >= 3 && state.players.length >= 25) {
-                logDiag(`3 teams loaded (${state.players.length} players) — launching game while remaining ${sortedTeams.length - teamsCompleted} teams stream!`, 'ok');
-                launchGameImmediately(sessionId);
+                const over10Count = state.players.filter(p => typeof p.mpg === 'number' && p.mpg > 10.0).length;
+                logDiag(`Loaded ${team.abbreviation || team.displayName} (${over10Count} players >10 MPG so far)`, 'ok');
               }
             } catch (err) {
               if (!firstRosterError) firstRosterError = err.message;
@@ -1274,6 +1273,9 @@
           })
         );
       }
+
+      state.mpgSyncComplete = true;
+      rebuildDailySeedPool();
 
       if (!state.gameStarted && state.players.length >= 4) {
         launchGameImmediately(sessionId);
@@ -1520,6 +1522,7 @@
       state.playerMap.clear();
       state.brokenImageIds.clear();
       state.dailySeedPool = [];
+      state.mpgSyncComplete = false;
       state.usedInfiniteIds.clear();
       stopDailyTimer();
 
@@ -1689,7 +1692,7 @@
       document.getElementById('card-surface').classList.remove('hidden');
       document.getElementById('daily-timer-header').classList.remove('hidden');
       document.getElementById('daily-live-score').textContent = '0';
-      document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet';
+      document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet (>10 MPG)';
       document.getElementById('give-up-btn').classList.add('hidden');
 
       loadDailyPlayer(0);
