@@ -123,7 +123,8 @@
           <span class="tracking-wide">EBK</span>
           <span class="ml-auto hidden md:inline-block w-2 h-2 rounded-full bg-orange-400"></span>
         </a>
-      <!-- Imposter Tab -->
+
+        <!-- Imposter Tab -->
         <a
           href="/nba-games/imposter/"
           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent hover:bg-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white font-bold text-sm transition-all"
@@ -256,9 +257,6 @@
             <p id="daily-name-error" class="hidden text-xs font-semibold text-red-400 mt-1.5">
               Please enter your name before starting the Daily Gauntlet.
             </p>
-            <p id="daily-pool-loading-msg" class="hidden text-xs font-semibold text-amber-400 mt-1.5">
-              Syncing &gt;10 MPG stats — ready in a moment...
-            </p>
           </div>
 
           <button
@@ -357,7 +355,7 @@
 
             <div class="w-full flex items-center justify-between text-xs font-semibold text-zinc-400 mb-2">
               <span id="roster-mode-badge" class="px-2.5 py-1 rounded-full bg-zinc-800/90 border border-zinc-700/60 text-zinc-300">
-                Daily Gauntlet (&gt;10 MPG)
+                Daily Gauntlet
               </span>
               <span id="round-indicator" class="text-zinc-400 font-bold">Player #1</span>
             </div>
@@ -445,7 +443,7 @@
 
       <!-- Footer -->
       <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
-        <span id="footer-source-text">Live NBA roster, MPG &amp; headshot data powered dynamically via ESPN &amp; Wikipedia APIs.</span>
+        <span id="footer-source-text">Live NBA roster &amp; headshot data powered dynamically via ESPN &amp; Wikipedia APIs.</span>
       </footer>
 
     </div>
@@ -511,9 +509,9 @@
       players: [],             // All active live NBA players
       playerMap: new Map(),    // Deduplicated player registry keyed by canonical ID
       brokenImageIds: new Set(),
-      dailySeedPool: [],       // Deterministic daily seed of unique players averaging > 10.0 MPG
+      dailySeedPool: [],       // Deterministic daily seed of unique active players
       usedDailyIds: new Set(), // Guarantees zero duplicate players during a Daily Gauntlet run
-      mpgSyncComplete: false,  // True once current-season MPG stats finish loading
+      mpgSyncComplete: false,  // True once full 30-team roster sync finishes
       usedInfiniteIds: new Set(),
       currentPlayer: null,
       imageRequestToken: 0,    // Guards against stale image onload race conditions
@@ -547,7 +545,7 @@
     const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
 
     /**
-     * Append a timestamped line to the real-time diagnostic log
+     * Append a timestamped line to the real-time diagnostic log (if present)
      */
     function logDiag(message, tone = 'info') {
       const logEl = document.getElementById('loading-log');
@@ -663,7 +661,6 @@
 
     /**
      * Build the deterministic Daily Gauntlet Pool for today's EST date
-     * Strictly includes ONLY deduplicated active NBA players averaging > 10.0 MPG.
      */
     function rebuildDailySeedPool() {
       const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
@@ -698,6 +695,7 @@
         badgeEl.textContent = 'Daily Gauntlet';
       }
     }
+
     /**
      * Once-Per-Day Device Completion Lockout & Global Leaderboard Service
      */
@@ -950,54 +948,6 @@
     }
 
     /**
-     * Extract real MPG (minutes per game) from ESPN team/athlete statistics JSON payloads
-     */
-    function extractMpgMapFromTeamStats(statsJson) {
-      const mpgByEspnId = new Map();
-      const categories =
-        statsJson?.results?.stats?.categories ||
-        statsJson?.stats?.categories ||
-        statsJson?.athletes ||
-        [];
-
-      if (!Array.isArray(categories)) return mpgByEspnId;
-
-      for (const item of categories) {
-        const names = item?.names || item?.labels || [];
-        if (Array.isArray(names) && names.length > 0) {
-          const minIdx = names.findIndex(n =>
-            /^(min|mpg|minutes|avgMinutes)$/i.test(String(n).trim())
-          );
-          if (minIdx !== -1 && Array.isArray(item.athletes)) {
-            for (const entry of item.athletes) {
-              const aid = entry?.athlete?.id;
-              const rawVal = entry?.stats?.[minIdx];
-              if (aid && rawVal !== undefined && rawVal !== null) {
-                const parsedMpg = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
-                if (!Number.isNaN(parsedMpg)) {
-                  mpgByEspnId.set(String(aid), parsedMpg);
-                }
-              }
-            }
-          }
-        }
-
-        if (item?.id && Array.isArray(item?.statsSummary?.statistics)) {
-          const minStat = item.statsSummary.statistics.find(s =>
-            /^(min|mpg|minutes|avgMinutes)$/i.test(String(s.name || s.abbreviation || '').trim())
-          );
-          if (minStat && minStat.value !== undefined) {
-            const parsedMpg = parseFloat(String(minStat.value));
-            if (!Number.isNaN(parsedMpg)) {
-              mpgByEspnId.set(String(item.id), parsedMpg);
-            }
-          }
-        }
-      }
-      return mpgByEspnId;
-    }
-
-    /**
      * Extract MPG directly from an athlete object if ESPN roster?enable=stats includes it
      */
     function extractAthleteInlineMpg(athlete) {
@@ -1076,21 +1026,20 @@
 
         const footerEl = document.getElementById('footer-source-text');
         if (footerEl) {
-          footerEl.textContent = `Live NBA roster, MPG & headshot data streamed dynamically via ${sourceLabel}.`;
+          footerEl.textContent = `Live NBA roster & headshot data streamed dynamically via ${sourceLabel}.`;
         }
       }
       return changed;
     }
 
     /**
-     * Transition into active gameplay once >10 MPG players are synced
+     * Transition into active gameplay once the full 30-team pool is ready
      */
     function launchGameImmediately(sessionId) {
       if (sessionId !== state.loadSessionId || state.gameStarted) return;
       if (state.players.length < 4) return;
 
       state.gameStarted = true;
-      document.getElementById('loading-bar').style.width = '100%';
       const dot = document.getElementById('status-dot');
       if (dot) {
         dot.classList.remove('bg-amber-400');
@@ -1111,43 +1060,7 @@
     }
 
     /**
-     * MPG stats enrichment for a team so >10.0 MPG filtering is 100% accurate
-     */
-    async function enrichTeamMpgInBackground(teamId, sessionId) {
-      try {
-        const [statsRes, athleteStatsRes] = await Promise.allSettled([
-          fetchJsonStrict(ESPN_TEAM_STATS_URL(teamId), 5500),
-          fetchJsonStrict(ESPN_ATHLETE_STATS_URL(teamId), 5500)
-        ]);
-        if (sessionId !== state.loadSessionId) return;
-
-        const mpgMap = new Map();
-        if (statsRes.status === 'fulfilled') {
-          extractMpgMapFromTeamStats(statsRes.value).forEach((v, k) => mpgMap.set(k, v));
-        }
-        if (athleteStatsRes.status === 'fulfilled') {
-          extractMpgMapFromTeamStats(athleteStatsRes.value).forEach((v, k) => mpgMap.set(k, v));
-        }
-
-        if (mpgMap.size > 0) {
-          const updates = [];
-          mpgMap.forEach((mpg, aid) => {
-            const existing = state.playerMap.get(`espn_${aid}`);
-            if (existing) {
-              updates.push({ ...existing, mpg });
-            }
-          });
-          if (updates.length > 0) {
-            addPlayersToPool(updates, 'ESPN Live Rosters & Stats');
-          }
-        }
-      } catch (_) {
-        // Non-fatal
-      }
-    }
-
-    /**
-     * SOURCE A (Primary): ESPN Public Roster API + MPG Stats (All 30 Teams in deterministic order, batches of 6)
+     * SOURCE A (Primary): ESPN Public Roster API (All 30 Teams in deterministic order, batches of 6)
      */
     async function fetchSourceA_EspnRosters(sessionId) {
       logDiag('Source A: Fetching NBA teams from ESPN Roster API...');
@@ -1161,15 +1074,13 @@
         throw new Error('ESPN teams endpoint returned 0 teams');
       }
 
-      logDiag(`Source A: Found ${teams.length} teams. Streaming rosters & >10 MPG stats...`, 'ok');
-      document.getElementById('loading-bar').style.width = '30%';
+      logDiag(`Source A: Found ${teams.length} teams. Streaming rosters...`, 'ok');
 
       // Deterministic team order so daily seed builds consistently across browsers
       const sortedTeams = [...teams].sort((a, b) =>
         String(a.id).localeCompare(String(b.id))
       );
 
-      let teamsCompleted = 0;
       let firstRosterError = null;
       const batchSize = 6;
 
@@ -1217,17 +1128,6 @@
                 });
 
               addPlayersToPool(mappedPlayers, 'ESPN Live Rosters');
-              teamsCompleted++;
-
-              // Fetch current-season MPG stats for this team so >10.0 MPG filter is exact
-              await enrichTeamMpgInBackground(team.id, sessionId);
-
-              if (!state.gameStarted) {
-                const pct = Math.min(95, 30 + Math.round((teamsCompleted / sortedTeams.length) * 65));
-                document.getElementById('loading-bar').style.width = `${pct}%`;
-                const over10Count = state.players.filter(p => typeof p.mpg === 'number' && p.mpg > 10.0).length;
-                logDiag(`Loaded ${team.abbreviation || team.displayName} (${over10Count} players >10 MPG so far)`, 'ok');
-              }
             } catch (err) {
               if (!firstRosterError) firstRosterError = err.message;
             }
@@ -1250,7 +1150,6 @@
      */
     async function fetchSourceB_EspnCoreAthletes(sessionId) {
       logDiag('Source B: Fetching active NBA athletes via ESPN Core V3 (single request)...', 'warn');
-      document.getElementById('loading-bar').style.width = '55%';
 
       const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 6500);
       if (sessionId !== state.loadSessionId) return;
@@ -1289,7 +1188,6 @@
      */
     async function fetchSourceC_Wikipedia(sessionId) {
       logDiag('Source C: Querying Wikipedia MediaWiki Current NBA Players (CORS + JSONP)...', 'warn');
-      document.getElementById('loading-bar').style.width = '78%';
 
       let wikiData;
       try {
@@ -1493,17 +1391,10 @@
       const loadingScreen = document.getElementById('loading-screen');
       const errorScreen = document.getElementById('error-screen');
       const gameCard = document.getElementById('game-card');
-      const loadingBar = document.getElementById('loading-bar');
-      const logEl = document.getElementById('loading-log');
-      const startNowBtn = document.getElementById('start-now-btn');
 
       loadingScreen.classList.remove('hidden');
       errorScreen.classList.add('hidden');
       gameCard.classList.add('hidden');
-      startNowBtn.classList.add('hidden');
-      loadingBar.style.width = '15%';
-      loadingStatus.textContent = 'Connecting to live NBA APIs & MPG stats...';
-      logEl.innerHTML = `<div class="text-zinc-500">[0.0s] Protocol: ${window.location.protocol} — Starting live NBA roster &amp; MPG pipeline...</div>`;
 
       fetchLiveNbaPlayers(sessionId);
     }
@@ -1609,7 +1500,7 @@
 
     /**
      * =========================================================================
-     * DAILY GAUNTLET (10-SECOND SHOT CLOCK + NO DUPLICATES + >10 MPG ONLY)
+     * DAILY GAUNTLET (10-SECOND SHOT CLOCK + NO DUPLICATES)
      * =========================================================================
      */
     function startDailyGauntlet() {
@@ -1683,7 +1574,7 @@
         candidateIdx++;
       }
 
-      // If every single >10 MPG player in today's pool has been named without duplicates, finish cleanly!
+      // If every single player in today's pool has been named without duplicates, finish cleanly!
       if (!chosenPlayer) {
         handleDailyPoolCleared();
         return false;
@@ -2025,16 +1916,16 @@
       'donovan mitchell': ['spida', 'donovan', 'mitchell'],
       'darius garland': ['dg', 'garland'],
       'evan mobley': ['mobley'],
-      'tyrese maxey': ['maxey'],
+      'tyrese maxey': ['maxey','rese'],
       'pascal siakam': ['pascal', 'spicy p', 'siakam'],
-      'bennedict mathurin': ['mathurin', 'benn mathurin'],
+      'bennedict mathurin': ['mathurin', 'ben mathurin'],
       'jonathan kuminga': ['kuminga', 'jk'],
       'klay thompson': ['klay'],
       'draymond green': ['draymond', 'dray'],
       'austin reaves': ['ar15', 'reaves', 'hillbilly kobe'],
       'jrue holiday': ['jrue'],
-      'derrick white': ['buffalo', 'the buffalo'],
-      'deandre ayton': ['ayton', 'dominayton'],
+      'derrick white': ['buffalo', 'the buffalo','dwhite'],
+      'deandre ayton': ['ayton', 'dominayton', 'da'],
       'julius randle': ['randle'],
       'rudy gobert': ['gobert', 'rudy', 'stifle tower'],
       'naz reid': ['naz', 'naz reid'],
@@ -2069,7 +1960,7 @@
       'mitchell robinson': ['mitch', 'mitch rob'],
       'immanuel quickley': ['iq', 'quickley'],
       'rj barrett': ['rj', 'barrett'],
-      'jakob poeltl': ['poeltl', 'jacob poeltl'],
+      'jakob poeltl': ['poeltl', 'jacob poeltl', 'jak'],
       'gradey dick': ['gradey'],
       'ivica zubac': ['zu', 'zubac'],
       'norman powell': ['norm', 'norm powell'],
@@ -2078,11 +1969,11 @@
       'keegan murray': ['keegan'],
       'demar derozan': ['demar', 'derozan', 'deebo'],
       'zach lavine': ['lavine'],
-      'nikola vucevic': ['vooch', 'vucevic'],
+      'nikola vucevic': ['vooch', 'vucevic', 'vuch'],
       'coby white': ['coby'],
       'ayo dosunmu': ['ayo', 'dosunmu'],
       'matas buzelis': ['matas', 'buzelis'],
-      'brandon miller': ['bmiller', 'brandon miller'],
+      'brandon miller': ['bmills', 'brandon miller'],
       'miles bridges': ['miles bridges'],
       'mark williams': ['mark williams'],
       'jarrett allen': ['fro', 'the fro', 'jarrett allen'],
@@ -2404,3 +2295,4 @@
   </script>
 </body>
 </html>
+```[cite: 5]
