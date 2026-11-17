@@ -202,14 +202,14 @@
         <!-- Active Game Area -->
         <div id="game-card" class="hidden w-full animate-pop">
 
-          <!-- 3-Button Gamemode Toggle -->
+          <!-- 2-Button Gamemode Toggle: Daily & Infinite -->
           <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-4">
             <div role="tablist" aria-label="Stathead Gamemodes" class="inline-flex flex-wrap p-1 bg-zinc-900 border border-zinc-800 rounded-xl gap-1">
               <button
                 type="button"
                 id="mode-daily-btn"
                 onclick="setGameMode('daily')"
-                class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5"
+                class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -221,29 +221,14 @@
               </button>
               <button
                 type="button"
-                id="mode-inf-points-btn"
-                onclick="setGameMode('infinite_points')"
-                class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5"
+                id="mode-infinite-btn"
+                onclick="setGameMode('infinite')"
+                class="px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" />
                 </svg>
-                <span>Infinite Points</span>
-              </button>
-              <button
-                type="button"
-                id="mode-inf-random-btn"
-                onclick="setGameMode('infinite_random')"
-                class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                  <polyline points="16 3 21 3 21 8"></polyline>
-                  <line x1="4" y1="20" x2="21" y2="3"></line>
-                  <polyline points="21 16 21 21 16 21"></polyline>
-                  <line x1="15" y1="15" x2="21" y2="21"></line>
-                  <line x1="4" y1="4" x2="9" y2="9"></line>
-                </svg>
-                <span>Infinite Random</span>
+                <span>Infinite</span>
               </button>
             </div>
           </div>
@@ -252,7 +237,7 @@
           <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
             <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Daily Stathead Challenge</h2>
             <p class="text-sm text-zinc-400 max-w-md mx-auto mb-5 leading-relaxed">
-              Guess today's featured <span class="text-orange-400 font-bold">NBA starter's</span> exact 2026–27 season average going into today.
+              3 rounds on today's featured <span class="text-orange-400 font-bold">NBA starter</span>: predict their 2026–27 Points, Assists, and Rebounds per game going into today.
             </p>
 
             <div class="max-w-xs mx-auto mb-5">
@@ -305,22 +290,22 @@
             </p>
 
             <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-1">
-              <span id="daily-final-score" class="text-orange-400">0</span> / 100 Points
+              <span id="daily-final-score" class="text-orange-400">0</span> Points
             </h2>
             <p class="text-xs text-zinc-400 mb-4">
               Come back at 12:00 AM EST for tomorrow's starter (<span id="daily-completed-countdown" class="font-mono text-amber-400 font-bold">--:--:--</span>)
             </p>
 
-            <!-- Daily Recap Card -->
-            <div id="daily-recap-box" class="max-w-md mx-auto my-4 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-4 flex items-center gap-3.5 text-left">
-              <img id="daily-recap-img" src="" alt="Daily Player" class="w-16 h-16 rounded-xl object-contain bg-zinc-900 border border-zinc-800 shrink-0" />
-              <div class="min-w-0 flex-1">
-                <div id="daily-recap-stat-label" class="text-[10px] font-bold uppercase tracking-wider text-orange-400">POINTS PER GAME</div>
-                <div id="daily-recap-player-name" class="text-sm sm:text-base font-extrabold text-white truncate">--</div>
-                <div id="daily-recap-numbers" class="text-xs text-zinc-300 mt-1">
-                  Your guess: <strong class="text-white">--</strong> • Actual: <strong class="text-emerald-400">--</strong>
+            <!-- Daily 3-Round Recap Card -->
+            <div id="daily-recap-box" class="max-w-md mx-auto my-4 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-4 text-left space-y-3">
+              <div class="flex items-center gap-3.5">
+                <img id="daily-recap-img" src="" alt="Daily Player" class="w-14 h-14 rounded-xl object-contain bg-zinc-900 border border-zinc-800 shrink-0" />
+                <div class="min-w-0 flex-1">
+                  <div class="text-[10px] font-bold uppercase tracking-wider text-orange-400">2026-27 DAILY STARTER</div>
+                  <div id="daily-recap-player-name" class="text-sm sm:text-base font-extrabold text-white truncate">--</div>
                 </div>
               </div>
+              <div id="daily-recap-rounds-list" class="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-800/80 text-center"></div>
             </div>
 
             <!-- Global Leaderboard -->
@@ -341,36 +326,26 @@
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
+            <div class="flex items-center justify-center mt-6">
               <button
                 type="button"
-                onclick="setGameMode('infinite_points')"
-                class="w-full sm:w-auto px-5 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-600/20"
+                onclick="setGameMode('infinite')"
+                class="w-full sm:w-auto px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-600/20"
               >
-                Play Infinite Points
-              </button>
-              <button
-                type="button"
-                onclick="setGameMode('infinite_random')"
-                class="w-full sm:w-auto px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl border border-zinc-700 transition"
-              >
-                Play Infinite Random
+                Play Infinite
               </button>
             </div>
           </div>
 
-          <!-- ACTIVE PLAYER CARD (Shared by Daily, Infinite Points & Infinite Random) -->
+          <!-- ACTIVE PLAYER CARD (Shared by Daily & Infinite) -->
           <div id="card-surface" class="hidden bg-zinc-900/90 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300">
 
             <!-- Top Player Stage -->
             <div class="player-stage relative pt-5 pb-5 px-6 flex flex-col items-center border-b border-zinc-800/80">
 
-              <div class="w-full flex items-center justify-between text-xs font-semibold text-zinc-400 mb-2">
+              <div class="w-full flex items-center justify-start text-xs font-semibold text-zinc-400 mb-2">
                 <span id="roster-mode-badge" class="px-2.5 py-1 rounded-full bg-zinc-800/90 border border-zinc-700/60 text-zinc-300">
                   Daily Starter
-                </span>
-                <span id="games-context-badge" class="text-zinc-400 font-semibold">
-                  2026-27 Through Yesterday
                 </span>
               </div>
 
@@ -390,10 +365,9 @@
                 />
               </div>
 
-              <!-- Player Name & Team Subtitle -->
+              <!-- Player Name -->
               <div class="mt-3 text-center">
                 <h2 id="player-name-heading" class="text-xl sm:text-2xl font-black text-white tracking-tight">--</h2>
-                <p id="player-meta-sub" class="text-xs sm:text-sm text-zinc-400 font-medium mt-0.5">--</p>
               </div>
 
               <!-- Target Stat Category Callout -->
@@ -435,7 +409,7 @@
                   min="0"
                   inputmode="decimal"
                   autocomplete="off"
-                  placeholder="Enter 2026-27 average (e.g. 24.5)..."
+                  placeholder="Enter your guess"
                   class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 text-sm sm:text-base font-semibold outline-none transition tabular-nums"
                 />
                 <button
@@ -447,23 +421,19 @@
                 </button>
               </form>
 
-              <!-- Inline Validation / Status Feedback -->
-              <div class="mt-3 min-h-[22px] flex items-center justify-between gap-2 text-xs">
-                <div id="inline-feedback" class="font-semibold text-zinc-500">
-                  Enter a positive number (auto-rounded to 1 decimal place).
-                </div>
-              </div>
+              <!-- Validation Error Only (Hidden by default) -->
+              <div id="inline-feedback" class="hidden mt-3 text-xs font-bold text-red-400"></div>
 
-              <!-- Next Player Button (Infinite Modes) -->
+              <!-- Next Step Button (Next Daily Stat or Next Infinite Player) -->
               <div id="next-action-container" class="hidden mt-5 pt-4 border-t border-zinc-800/80 flex items-center justify-between gap-3">
-                <span class="text-xs text-zinc-400 hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-300 font-mono">Enter</kbd> for next</span>
+                <span class="text-xs text-zinc-400 hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-300 font-mono">Enter</kbd> to continue</span>
                 <button
                   type="button"
-                  id="next-player-btn"
-                  onclick="nextInfiniteRound()"
+                  id="next-action-btn"
+                  onclick="handleNextAction()"
                   class="w-full sm:w-auto ml-auto px-6 py-3 bg-white hover:bg-zinc-200 text-zinc-950 font-extrabold rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <span>Next Player</span>
+                  <span id="next-action-label">Next Player</span>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -500,14 +470,16 @@
       tableName: 'stathead_daily_leaderboard'
     };
 
-    const STAT_CATEGORIES = ['Points', 'Assists', 'Rebounds', 'Steals', 'Blocks'];
+    // Only Points, Assists, and Rebounds (Steals and Blocks completely removed)
+    const STAT_CATEGORIES = ['Points', 'Assists', 'Rebounds'];
+    const DAILY_ROUND_SEQUENCE = ['Points', 'Assists', 'Rebounds'];
 
+    // Equivalence scaling: 20 Points == 6 Rebounds == 4 Assists
+    // errorMultiplier converts any stat error into Points-equivalent error
     const STAT_META = {
-      Points:   { key: 'pts', abbr: 'PPG', label: 'Points Per Game' },
-      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game' },
-      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game' },
-      Steals:   { key: 'stl', abbr: 'SPG', label: 'Steals Per Game' },
-      Blocks:   { key: 'blk', abbr: 'BPG', label: 'Blocks Per Game' }
+      Points:   { key: 'pts', abbr: 'PPG', label: 'Points Per Game',   errorMultiplier: 1 },
+      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 20 / 4 }, // 5.0x
+      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }  // 3.333...x
     };
 
     /**
@@ -560,8 +532,7 @@
       players: [],                   // Active NBA players
       playerMap: new Map(),          // Keyed by canonical ID
       teamCache: new Map(),          // team $ref -> { displayName, abbreviation }
-      athleteMetaCache: new Map(),   // espnId -> { jersey, position }
-      verifiedStatsCache: new Map(), // espnId -> { pts, ast, reb, stl, blk, gp, gs, isStarter }
+      verifiedStatsCache: new Map(), // espnId -> { pts, ast, reb, gp, gs, isStarter }
       invalidPlayerIds: new Set(),   // Players with 0 games played in 2026-27 regular season prior to today
       brokenImageIds: new Set(),
       sourceErrors: [],
@@ -569,7 +540,7 @@
       todayDateKey: '',              // YYYY-MM-DD in America/New_York
       todayEventIds: new Set(),      // ESPN event IDs scheduled/live/finished today
 
-      gameMode: 'daily',             // 'daily' | 'infinite_points' | 'infinite_random'
+      gameMode: 'daily',             // 'daily' | 'infinite'
       currentPlayer: null,
       currentStatCategory: 'Points',
       currentVerifiedStat: null,
@@ -579,14 +550,15 @@
       roundRequestToken: 0,
       loadSessionId: 0,
 
-      // Daily Mode state
+      // Daily Mode 3-Round State (Points -> Assists -> Rebounds for same player)
       playerName: '',
       dailyStarter: null,
-      dailyCategory: 'Points',
+      dailyStarterStats: null,
+      dailyRoundIndex: 0,            // 0 = Points, 1 = Assists, 2 = Rebounds
+      dailyRoundResults: [],         // [{ category, userGuess, actualStat, points, diff }]
 
-      // Infinite Modes unseen pools
-      usedInfinitePointsIds: new Set(),
-      usedInfiniteRandomIds: new Set()
+      // Infinite Mode unseen pool
+      usedInfiniteIds: new Set()
     };
 
     // Live API Endpoints (2026-27 NBA Regular Season Locked)
@@ -600,8 +572,6 @@
       `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`;
     const ESPN_CORE_SEASON_EVENTLOG_URL = (athleteId) =>
       `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}/eventlog?limit=15`;
-    const ESPN_CORE_SEASON_ATHLETE_URL = (athleteId) =>
-      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}`;
 
     const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
 
@@ -776,8 +746,6 @@
             fullName: p.fullName.trim(),
             headshot: p.headshot,
             fallbackHeadshot: p.fallbackHeadshot || p.headshot,
-            jersey: p.jersey || '?',
-            position: p.position || 'NBA',
             teamName: p.teamName || 'Active NBA Roster',
             teamAbbr: p.teamAbbr || 'NBA'
           };
@@ -873,8 +841,6 @@
                     fullName: (a.displayName || a.fullName).trim(),
                     teamName: data?.team?.displayName || team.displayName || team.name || 'NBA',
                     teamAbbr: data?.team?.abbreviation || team.abbreviation || 'NBA',
-                    jersey: a.jersey || '?',
-                    position: a.position?.abbreviation || a.position?.name || 'NBA',
                     headshot: a.headshot?.href || `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`,
                     fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`
                   };
@@ -912,8 +878,6 @@
           fullName: (item.displayName || item.fullName).trim(),
           teamName: 'Active NBA Roster',
           teamAbbr: 'NBA',
-          jersey: item.jersey || '?',
-          position: item.position?.abbreviation || item.position?.name || 'NBA',
           headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${item.id}.png`,
           fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${item.id}.png&w=350&h=254`
         }));
@@ -942,15 +906,12 @@
         .filter(p => p && p.title && p.thumbnail?.source && !p.title.startsWith('Category:'))
         .map(p => {
           const cleanName = p.title.replace(/\s*\(basketball\)\s*/gi, '').replace(/\s*\(.*?\)\s*/g, '').trim();
-          const desc = p.description || 'NBA Player';
           return {
             id: `wiki_${p.pageid}`,
             espnId: '',
             fullName: cleanName,
             teamName: 'Active NBA Roster',
             teamAbbr: 'NBA',
-            jersey: '?',
-            position: desc.charAt(0).toUpperCase() + desc.slice(1),
             headshot: p.thumbnail.source,
             fallbackHeadshot: p.thumbnail.source
           };
@@ -1018,56 +979,34 @@
     }
 
     /**
-     * Resolve Player's 2026-27 Team Name & Jersey/Position Metadata (Cached)
+     * Resolve Player's 2026-27 Team Abbreviation for Fallback Image Placeholder (Cached)
      */
-    async function hydratePlayerSeasonMeta(player, teamRef) {
-      const aid = String(player.espnId || '');
-
-      if (teamRef && (!player.teamName || player.teamName === 'Active NBA Roster' || player.teamName === 'NBA')) {
-        const secureRef = toHttps(teamRef);
-        if (state.teamCache.has(secureRef)) {
-          const cached = state.teamCache.get(secureRef);
-          player.teamName = cached.displayName;
-          player.teamAbbr = cached.abbreviation;
-        } else {
-          try {
-            const teamData = await fetchJsonStrict(secureRef, 4500);
-            const info = {
-              displayName: teamData?.displayName || teamData?.name || 'NBA',
-              abbreviation: teamData?.abbreviation || 'NBA'
-            };
-            state.teamCache.set(secureRef, info);
-            player.teamName = info.displayName;
-            player.teamAbbr = info.abbreviation;
-          } catch (_) {}
-        }
+    async function hydratePlayerTeamAbbr(player, teamRef) {
+      if (!teamRef || (player.teamAbbr && player.teamAbbr !== 'NBA')) return;
+      const secureRef = toHttps(teamRef);
+      if (state.teamCache.has(secureRef)) {
+        const cached = state.teamCache.get(secureRef);
+        player.teamName = cached.displayName;
+        player.teamAbbr = cached.abbreviation;
+        return;
       }
-
-      if (aid && (player.jersey === '?' || player.position === 'NBA')) {
-        if (state.athleteMetaCache.has(aid)) {
-          const meta = state.athleteMetaCache.get(aid);
-          if (meta.jersey) player.jersey = meta.jersey;
-          if (meta.position) player.position = meta.position;
-        } else {
-          try {
-            const athData = await fetchJsonStrict(ESPN_CORE_SEASON_ATHLETE_URL(aid), 4500);
-            const meta = {
-              jersey: athData?.jersey ? String(athData.jersey) : '?',
-              position: athData?.position?.abbreviation || athData?.position?.name || 'NBA'
-            };
-            state.athleteMetaCache.set(aid, meta);
-            player.jersey = meta.jersey;
-            player.position = meta.position;
-          } catch (_) {}
-        }
-      }
+      try {
+        const teamData = await fetchJsonStrict(secureRef, 4500);
+        const info = {
+          displayName: teamData?.displayName || teamData?.name || 'NBA',
+          abbreviation: teamData?.abbreviation || 'NBA'
+        };
+        state.teamCache.set(secureRef, info);
+        player.teamName = info.displayName;
+        player.teamAbbr = info.abbreviation;
+      } catch (_) {}
     }
 
     /**
      * STRICT 2026-27 NBA REGULAR SEASON ACCURACY ENGINE (CORS-Open ESPN Core v2):
      * Fetches ONLY `seasons/2027/types/2/athletes/{id}/statistics` and `seasons/2027/athletes/{id}/eventlog`,
      * rejects any player who has not played in the 2026-27 regular season, excludes any game played TODAY in EST,
-     * and returns { gp, gs, isStarter, pts, reb, ast, stl, blk } strictly GOING INTO TODAY for 2026-27.
+     * and returns { gp, gs, isStarter, pts, reb, ast } strictly GOING INTO TODAY for 2026-27.
      */
     async function getVerifiedPreTodayStats(player) {
       if (!player || !player.espnId || !/^\d+$/.test(player.espnId)) return null;
@@ -1106,8 +1045,6 @@
         let totalPts = sMap.points ?? ((sMap.avgPoints || 0) * gp);
         let totalReb = sMap.rebounds ?? ((sMap.avgRebounds || 0) * gp);
         let totalAst = sMap.assists ?? ((sMap.avgAssists || 0) * gp);
-        let totalStl = sMap.steals ?? ((sMap.avgSteals || 0) * gp);
-        let totalBlk = sMap.blocks ?? ((sMap.avgBlocks || 0) * gp);
         let preTodayGp = gp;
 
         // Check if player has a played/live game in today's EST slate and subtract it from 2026-27 totals
@@ -1125,8 +1062,6 @@
                 totalPts = Math.max(0, totalPts - (gMap.points || 0));
                 totalReb = Math.max(0, totalReb - (gMap.rebounds || 0));
                 totalAst = Math.max(0, totalAst - (gMap.assists || 0));
-                totalStl = Math.max(0, totalStl - (gMap.steals || 0));
-                totalBlk = Math.max(0, totalBlk - (gMap.blocks || 0));
               } else {
                 // Player's only 2026-27 game was played today -> 0 games prior to today
                 state.invalidPlayerIds.add(aid);
@@ -1136,7 +1071,7 @@
           }
         }
 
-        await hydratePlayerSeasonMeta(player, statsData?.team?.$ref);
+        await hydratePlayerTeamAbbr(player, statsData?.team?.$ref);
 
         const isStarter = (gp >= 2 && (gs / gp) >= 0.5) || (gp === 1 && gs === 1);
         const result = {
@@ -1145,9 +1080,7 @@
           isStarter,
           pts: Math.round((totalPts / preTodayGp) * 10) / 10,
           reb: Math.round((totalReb / preTodayGp) * 10) / 10,
-          ast: Math.round((totalAst / preTodayGp) * 10) / 10,
-          stl: Math.round((totalStl / preTodayGp) * 10) / 10,
-          blk: Math.round((totalBlk / preTodayGp) * 10) / 10
+          ast: Math.round((totalAst / preTodayGp) * 10) / 10
         };
 
         state.verifiedStatsCache.set(aid, result);
@@ -1159,28 +1092,35 @@
     }
 
     /**
-     * Exact Stathead Scoring Formula (100 points for a perfect guess)
+     * Stat-Scaled Scoring Formula:
+     * 20 Points == 6 Rebounds == 4 Assists
+     * - Points error multiplier:   1.0x  (<= 3.0 off scores; 0.0 = 100, 3.0 = 10, > 3.0 = 0)
+     * - Rebounds error multiplier: 20/6  (<= 0.9 off scores; 0.0 = 100, 0.9 = 10, > 0.9 = 0)
+     * - Assists error multiplier:  20/4  (<= 0.6 off scores; 0.0 = 100, 0.6 = 10, > 0.6 = 0)
+     * Max score = 100 for all three; lowest non-zero score = 10 for all three.
      */
-    function calculateStatheadPoints(roundedGuess, actualStat) {
+    function calculateStatheadPoints(roundedGuess, actualStat, statCategory) {
       const target = Math.round(actualStat * 10) / 10;
       const diff = Math.round(Math.abs(roundedGuess - target) * 10) / 10;
+      const multiplier = STAT_META[statCategory]?.errorMultiplier || 1;
+      const eqDiff = Math.round(diff * multiplier * 10000) / 10000;
 
       let points = 0;
-      if (diff === 0) points = 100;
-      else if (diff <= 0.2) points = 80;
-      else if (diff <= 0.4) points = 70;
-      else if (diff <= 0.6) points = 60;
-      else if (diff <= 0.8) points = 50;
-      else if (diff <= 1.0) points = 40;
-      else if (diff < 3.0) points = 20;
-      else if (diff === 3.0) points = 10;
+      if (diff === 0 || eqDiff === 0) points = 100;
+      else if (eqDiff <= 0.2) points = 80;
+      else if (eqDiff <= 0.4) points = 70;
+      else if (eqDiff <= 0.6) points = 60;
+      else if (eqDiff <= 0.8) points = 50;
+      else if (eqDiff <= 1.0) points = 40;
+      else if (eqDiff < 3.0) points = 20;
+      else if (Math.abs(eqDiff - 3.0) < 1e-4) points = 10;
       else points = 0;
 
       return { points, diff, target };
     }
 
     /**
-     * Daily Mode Completion Lockout & Global Leaderboard Helpers
+     * Daily Mode Completion & Mid-Session 3-Round Persistence
      */
     function getDailyCompletionRecord() {
       const { dateKey } = getEstDateInfo();
@@ -1200,6 +1140,27 @@
         ...record,
         dateKey,
         completed: true
+      }));
+    }
+
+    function getDailyProgressRecord() {
+      const { dateKey } = getEstDateInfo();
+      const raw = safeGetStorage(`stathead_daily_progress_${dateKey}`);
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && Array.isArray(parsed.rounds) ? parsed : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function saveDailyProgressRecord() {
+      const { dateKey } = getEstDateInfo();
+      safeSetStorage(`stathead_daily_progress_${dateKey}`, JSON.stringify({
+        dateKey,
+        name: state.playerName,
+        rounds: state.dailyRoundResults
       }));
     }
 
@@ -1360,14 +1321,15 @@
     }
 
     /**
-     * Determine Today's Deterministic Daily Starter & Stat Category (2026-27 Season)
+     * Determine Today's Deterministic Daily Starter (2026-27 Season)
      */
     async function resolveDailyStarterChallenge() {
+      if (state.dailyStarter && state.dailyStarterStats) {
+        return { player: state.dailyStarter, stats: state.dailyStarterStats };
+      }
+
       const { dateKey } = getEstDateInfo();
       const rng = mulberry32(hashString(`STATHEAD_DAILY_${NBA_SEASON_YEAR}_${dateKey}`));
-
-      const catIndex = Math.floor(rng() * STAT_CATEGORIES.length);
-      const chosenCategory = STAT_CATEGORIES[catIndex];
 
       const pool = state.players
         .filter(p => p.espnId && /^\d+$/.test(p.espnId) && !state.brokenImageIds.has(p.id))
@@ -1387,11 +1349,11 @@
         if (stats && stats.gp >= 1) {
           if (stats.isStarter) {
             state.dailyStarter = candidate;
-            state.dailyCategory = chosenCategory;
-            return { player: candidate, category: chosenCategory, stats };
+            state.dailyStarterStats = stats;
+            return { player: candidate, stats };
           }
           if (!fallbackActive) {
-            fallbackActive = { player: candidate, category: chosenCategory, stats };
+            fallbackActive = { player: candidate, stats };
           }
         }
         if (checked >= 40 && fallbackActive) {
@@ -1401,13 +1363,13 @@
 
       if (fallbackActive) {
         state.dailyStarter = fallbackActive.player;
-        state.dailyCategory = fallbackActive.category;
+        state.dailyStarterStats = fallbackActive.stats;
       }
       return fallbackActive;
     }
 
     /**
-     * Display Completed Daily Stathead Screen
+     * Display Completed Daily Stathead Screen (Combined 3-Round Score)
      */
     function showDailyCompletedScreen(record, justFinished = false) {
       document.getElementById('daily-start-screen').classList.add('hidden');
@@ -1426,18 +1388,31 @@
       updateEstCountdowns();
 
       const recapBox = document.getElementById('daily-recap-box');
-      if (record.playerName && record.statCategory) {
+      const roundsListEl = document.getElementById('daily-recap-rounds-list');
+
+      if (record.playerName && Array.isArray(record.rounds) && record.rounds.length > 0) {
         recapBox.classList.remove('hidden');
         const img = document.getElementById('daily-recap-img');
         img.onerror = () => {
           img.src = record.fallbackHeadshot || 'https://placehold.co/120x120/18181b/f97316?text=NBA';
         };
         img.src = record.headshot || '';
-        document.getElementById('daily-recap-stat-label').textContent =
-          `${NBA_SEASON_LABEL} ${record.statCategory.toUpperCase()} PER GAME (${STAT_META[record.statCategory]?.abbr || ''})`;
         document.getElementById('daily-recap-player-name').textContent = record.playerName;
-        document.getElementById('daily-recap-numbers').innerHTML =
-          `Your guess: <strong class="text-white">${Number(record.userGuess).toFixed(1)}</strong> • Actual: <strong class="text-emerald-400">${Number(record.actualStat).toFixed(1)}</strong>`;
+
+        roundsListEl.innerHTML = '';
+        for (const r of record.rounds) {
+          const abbr = STAT_META[r.category]?.abbr || r.category;
+          const cell = document.createElement('div');
+          cell.className = 'bg-zinc-900/90 border border-zinc-800 rounded-xl p-2';
+          cell.innerHTML = `
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-orange-400">${escapeHtml(abbr)}</div>
+            <div class="text-xs font-black text-emerald-400 mt-0.5">+${r.points} pts</div>
+            <div class="text-[11px] text-zinc-400 mt-0.5 tabular-nums">
+              ${Number(r.userGuess).toFixed(1)} vs <span class="text-white font-semibold">${Number(r.actualStat).toFixed(1)}</span>
+            </div>
+          `;
+          roundsListEl.appendChild(cell);
+        }
       } else {
         recapBox.classList.add('hidden');
       }
@@ -1446,21 +1421,19 @@
     }
 
     /**
-     * Switch Between 'daily', 'infinite_points', and 'infinite_random'
+     * Switch Between 'daily' and 'infinite'
      */
     function setGameMode(mode) {
       state.gameMode = mode;
 
       const dailyBtn = document.getElementById('mode-daily-btn');
-      const infPtsBtn = document.getElementById('mode-inf-points-btn');
-      const infRndBtn = document.getElementById('mode-inf-random-btn');
+      const infiniteBtn = document.getElementById('mode-infinite-btn');
 
-      const activeClass = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5';
-      const inactiveClass = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5';
+      const activeClass = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5';
+      const inactiveClass = 'px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5';
 
       dailyBtn.className = mode === 'daily' ? activeClass : inactiveClass;
-      infPtsBtn.className = mode === 'infinite_points' ? activeClass : inactiveClass;
-      infRndBtn.className = mode === 'infinite_random' ? activeClass : inactiveClass;
+      infiniteBtn.className = mode === 'infinite' ? activeClass : inactiveClass;
 
       const dailyStart = document.getElementById('daily-start-screen');
       const dailyOver = document.getElementById('daily-gameover-screen');
@@ -1470,6 +1443,16 @@
         const existingRecord = getDailyCompletionRecord();
         if (existingRecord) {
           showDailyCompletedScreen(existingRecord, false);
+          return;
+        }
+
+        // Check if user already started today's 3-round session
+        const progress = getDailyProgressRecord();
+        if (progress && progress.rounds.length > 0 && progress.rounds.length < DAILY_ROUND_SEQUENCE.length) {
+          state.playerName = progress.name || safeGetStorage('stathead_player_name') || 'Player';
+          state.dailyRoundResults = progress.rounds;
+          state.dailyRoundIndex = progress.rounds.length;
+          resumeDailySession();
           return;
         }
 
@@ -1492,7 +1475,31 @@
     }
 
     /**
-     * Start Today's Daily Stathead Round
+     * Resume an in-progress Daily 3-round session
+     */
+    async function resumeDailySession() {
+      const resolved = await resolveDailyStarterChallenge();
+      if (!resolved || state.gameMode !== 'daily') return;
+
+      document.getElementById('daily-start-screen').classList.add('hidden');
+      document.getElementById('daily-gameover-screen').classList.add('hidden');
+      document.getElementById('card-surface').classList.remove('hidden');
+
+      renderDailyRound(state.dailyRoundIndex);
+    }
+
+    /**
+     * Render Specific Round (0 = Points, 1 = Assists, 2 = Rebounds) of Today's Daily Starter
+     */
+    function renderDailyRound(roundIdx) {
+      state.dailyRoundIndex = roundIdx;
+      const category = DAILY_ROUND_SEQUENCE[roundIdx];
+      const badgeLabel = `Daily Starter • Round ${roundIdx + 1}/3`;
+      renderPlayerStatRound(state.dailyStarter, category, state.dailyStarterStats, badgeLabel);
+    }
+
+    /**
+     * Start Today's Daily Stathead 3-Round Challenge
      */
     async function startDailyStathead() {
       const existingRecord = getDailyCompletionRecord();
@@ -1537,22 +1544,27 @@
 
       if (!resolved) return;
 
+      const progress = getDailyProgressRecord();
+      if (progress && progress.rounds.length > 0 && progress.rounds.length < DAILY_ROUND_SEQUENCE.length) {
+        state.dailyRoundResults = progress.rounds;
+        state.dailyRoundIndex = progress.rounds.length;
+      } else {
+        state.dailyRoundResults = [];
+        state.dailyRoundIndex = 0;
+      }
+
       document.getElementById('daily-start-screen').classList.add('hidden');
       document.getElementById('daily-gameover-screen').classList.add('hidden');
       document.getElementById('card-surface').classList.remove('hidden');
 
-      renderPlayerStatRound(resolved.player, resolved.category, resolved.stats, 'Daily Starter');
+      renderDailyRound(state.dailyRoundIndex);
     }
 
     /**
-     * Pick and Verify Next Player for Infinite Points / Infinite Random (2026-27 Season Only)
+     * Pick and Verify Next Player for Infinite Mode (2026-27 Season Only)
      */
     async function nextInfiniteRound() {
       const reqToken = ++state.roundRequestToken;
-      const modeSnapshot = state.gameMode;
-      const usedSet = modeSnapshot === 'infinite_points'
-        ? state.usedInfinitePointsIds
-        : state.usedInfiniteRandomIds;
 
       const inputEl = document.getElementById('stat-input');
       const submitBtn = document.getElementById('submit-guess-btn');
@@ -1560,18 +1572,17 @@
 
       inputEl.disabled = true;
       submitBtn.disabled = true;
-      feedbackEl.className = 'font-semibold text-amber-400';
-      feedbackEl.textContent = `Verifying ${NBA_SEASON_LABEL} ESPN game log...`;
+      feedbackEl.classList.add('hidden');
 
       const validPool = state.players.filter(
         p => p.espnId && /^\d+$/.test(p.espnId) && !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(p.id)
       );
 
-      if (usedSet.size >= validPool.length) {
-        usedSet.clear();
+      if (state.usedInfiniteIds.size >= validPool.length) {
+        state.usedInfiniteIds.clear();
       }
 
-      const unseen = validPool.filter(p => !usedSet.has(p.id));
+      const unseen = validPool.filter(p => !state.usedInfiniteIds.has(p.id));
       const candidates = [...(unseen.length > 0 ? unseen : validPool)];
       for (let i = candidates.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1580,21 +1591,64 @@
 
       for (const candidate of candidates) {
         const stats = await getVerifiedPreTodayStats(candidate);
-        if (reqToken !== state.roundRequestToken || state.gameMode !== modeSnapshot) return;
+        if (reqToken !== state.roundRequestToken || state.gameMode !== 'infinite') return;
 
         if (stats && stats.gp >= 1) {
-          usedSet.add(candidate.id);
-          const category = modeSnapshot === 'infinite_points'
-            ? 'Points'
-            : STAT_CATEGORIES[Math.floor(Math.random() * STAT_CATEGORIES.length)];
-
-          const badgeLabel = modeSnapshot === 'infinite_points'
-            ? 'Infinite Points'
-            : 'Infinite Random';
-
-          renderPlayerStatRound(candidate, category, stats, badgeLabel);
+          state.usedInfiniteIds.add(candidate.id);
+          const category = STAT_CATEGORIES[Math.floor(Math.random() * STAT_CATEGORIES.length)];
+          renderPlayerStatRound(candidate, category, stats, 'Infinite');
           return;
         }
+      }
+    }
+
+    /**
+     * Handle Next Action Button (Advances Daily Round 1->2->3->Complete, or Next Infinite Player)
+     */
+    async function handleNextAction() {
+      if (!state.roundAnswered) return;
+
+      if (state.gameMode === 'daily') {
+        if (state.dailyRoundIndex + 1 < DAILY_ROUND_SEQUENCE.length) {
+          renderDailyRound(state.dailyRoundIndex + 1);
+        } else {
+          await finalizeDailyChallenge();
+        }
+      } else {
+        nextInfiniteRound();
+      }
+    }
+
+    /**
+     * Finalize 3-Round Daily Challenge, Sum Combined Score, and Post to Global Leaderboard
+     */
+    async function finalizeDailyChallenge() {
+      const existingRecord = getDailyCompletionRecord();
+      if (existingRecord) {
+        showDailyCompletedScreen(existingRecord, false);
+        return;
+      }
+
+      const totalCombinedScore = state.dailyRoundResults.reduce((sum, r) => sum + (Number(r.points) || 0), 0);
+      const completionRecord = {
+        name: state.playerName || safeGetStorage('stathead_player_name') || 'Player',
+        score: totalCombinedScore,
+        playerName: state.dailyStarter.fullName,
+        headshot: state.dailyStarter.headshot,
+        fallbackHeadshot: state.dailyStarter.fallbackHeadshot,
+        rounds: [...state.dailyRoundResults],
+        completedAt: Date.now()
+      };
+
+      saveDailyCompletionRecord(completionRecord);
+      await postScoreToGlobalLeaderboard({
+        name: completionRecord.name,
+        score: completionRecord.score,
+        completedAt: completionRecord.completedAt
+      });
+
+      if (state.gameMode === 'daily') {
+        showDailyCompletedScreen(completionRecord, true);
       }
     }
 
@@ -1604,6 +1658,7 @@
     function renderPlayerStatRound(player, statCategory, verifiedStats, badgeLabel) {
       const imgToken = ++state.imageRequestToken;
       const statInfo = STAT_META[statCategory];
+      const isSamePlayer = state.currentPlayer && state.currentPlayer.id === player.id;
 
       state.currentPlayer = player;
       state.currentStatCategory = statCategory;
@@ -1612,9 +1667,7 @@
       state.roundAnswered = false;
 
       document.getElementById('roster-mode-badge').textContent = badgeLabel;
-      document.getElementById('games-context-badge').textContent = `${NBA_SEASON_LABEL} • ${verifiedStats.gp} GP Pre-Today`;
       document.getElementById('player-name-heading').textContent = player.fullName;
-      document.getElementById('player-meta-sub').textContent = `${player.teamName} • #${player.jersey} • ${player.position}`;
       document.getElementById('target-stat-name').textContent = `${statCategory.toUpperCase()} (${statInfo.abbr})`;
 
       document.getElementById('reveal-banner').classList.add('hidden');
@@ -1634,38 +1687,40 @@
         'flex-1 bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 text-sm sm:text-base font-semibold outline-none transition tabular-nums';
       submitBtn.disabled = false;
 
-      feedbackEl.className = 'font-semibold text-zinc-500';
-      feedbackEl.textContent = 'Enter a positive number (auto-rounded to 1 decimal place).';
+      feedbackEl.classList.add('hidden');
+      feedbackEl.textContent = '';
 
       const imgEl = document.getElementById('player-headshot');
       const skeletonEl = document.getElementById('img-skeleton');
 
-      imgEl.onload = null;
-      imgEl.onerror = null;
-      imgEl.alt = player.fullName;
-      imgEl.removeAttribute('src');
-      imgEl.classList.add('opacity-0', 'scale-95');
-      skeletonEl.classList.remove('hidden');
+      if (!isSamePlayer || !imgEl.getAttribute('src')) {
+        imgEl.onload = null;
+        imgEl.onerror = null;
+        imgEl.alt = player.fullName;
+        imgEl.removeAttribute('src');
+        imgEl.classList.add('opacity-0', 'scale-95');
+        skeletonEl.classList.remove('hidden');
 
-      let triedFallback = false;
-      imgEl.onload = () => {
-        if (imgToken !== state.imageRequestToken) return;
-        skeletonEl.classList.add('hidden');
-        imgEl.classList.remove('opacity-0', 'scale-95');
-      };
-      imgEl.onerror = () => {
-        if (imgToken !== state.imageRequestToken) return;
-        if (!triedFallback && player.fallbackHeadshot && player.fallbackHeadshot !== imgEl.src) {
-          triedFallback = true;
-          imgEl.src = player.fallbackHeadshot;
-        } else {
-          state.brokenImageIds.add(player.id);
+        let triedFallback = false;
+        imgEl.onload = () => {
+          if (imgToken !== state.imageRequestToken) return;
           skeletonEl.classList.add('hidden');
-          imgEl.src = 'https://placehold.co/350x260/18181b/f97316?text=' + encodeURIComponent(player.teamAbbr || 'NBA');
           imgEl.classList.remove('opacity-0', 'scale-95');
-        }
-      };
-      imgEl.src = player.headshot;
+        };
+        imgEl.onerror = () => {
+          if (imgToken !== state.imageRequestToken) return;
+          if (!triedFallback && player.fallbackHeadshot && player.fallbackHeadshot !== imgEl.src) {
+            triedFallback = true;
+            imgEl.src = player.fallbackHeadshot;
+          } else {
+            state.brokenImageIds.add(player.id);
+            skeletonEl.classList.add('hidden');
+            imgEl.src = 'https://placehold.co/350x260/18181b/f97316?text=' + encodeURIComponent(player.teamAbbr || 'NBA');
+            imgEl.classList.remove('opacity-0', 'scale-95');
+          }
+        };
+        imgEl.src = player.headshot;
+      }
 
       setTimeout(() => inputEl.focus(), 30);
     }
@@ -1686,21 +1741,25 @@
         inputEl.classList.remove('animate-shake');
         void inputEl.offsetWidth;
         inputEl.classList.add('animate-shake', 'border-red-500');
-        feedbackEl.className = 'font-bold text-red-400';
-        feedbackEl.textContent = 'Invalid entry — please enter a valid positive number (0 or higher).';
+        feedbackEl.classList.remove('hidden');
+        feedbackEl.textContent = 'Please enter a valid positive number (0 or higher).';
         inputEl.focus();
         return;
       }
 
+      feedbackEl.classList.add('hidden');
       const roundedGuess = Math.round(parsedNum * 10) / 10;
-      const wasRounded = Math.abs(parsedNum - roundedGuess) > 1e-9;
 
       state.roundAnswered = true;
       inputEl.value = roundedGuess.toFixed(1);
       inputEl.disabled = true;
       document.getElementById('submit-guess-btn').disabled = true;
 
-      const { points, diff, target } = calculateStatheadPoints(roundedGuess, state.currentVerifiedStat);
+      const { points, diff, target } = calculateStatheadPoints(
+        roundedGuess,
+        state.currentVerifiedStat,
+        state.currentStatCategory
+      );
 
       const banner = document.getElementById('reveal-banner');
       const badge = document.getElementById('result-badge');
@@ -1733,49 +1792,42 @@
         glow.className = 'absolute inset-0 bg-amber-500/20 blur-2xl rounded-full transition-colors duration-300';
       } else if (points === 10) {
         badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-orange-500/20 text-orange-300 border border-orange-500/30';
-        badge.textContent = `+10 Points • Right on the 3.0 Edge!`;
+        badge.textContent = `+10 Points • On the Edge!`;
         cardSurface.className = 'bg-zinc-900/90 border-2 border-orange-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
       } else {
         badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-red-500/20 text-red-400 border border-red-500/30';
-        badge.textContent = `0 Points • More than 3.0 off`;
+        badge.textContent = `0 Points`;
         cardSurface.className = 'bg-zinc-900/90 border-2 border-red-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
         glow.className = 'absolute inset-0 bg-red-500/15 blur-2xl rounded-full transition-colors duration-300';
       }
 
-      feedbackEl.className = 'font-semibold text-zinc-400';
-      feedbackEl.textContent = wasRounded
-        ? `Rounded ${parsedNum} to nearest tenth (${roundedGuess.toFixed(1)}).`
-        : `Locked in ${roundedGuess.toFixed(1)} ${STAT_META[state.currentStatCategory].abbr}.`;
+      const nextContainer = document.getElementById('next-action-container');
+      const nextBtn = document.getElementById('next-action-btn');
+      const nextLabel = document.getElementById('next-action-label');
 
       if (state.gameMode === 'daily') {
-        const completionRecord = {
-          name: state.playerName || safeGetStorage('stathead_player_name') || 'Player',
-          score: points,
-          playerName: state.currentPlayer.fullName,
-          headshot: state.currentPlayer.headshot,
-          fallbackHeadshot: state.currentPlayer.fallbackHeadshot,
-          statCategory: state.currentStatCategory,
+        state.dailyRoundResults.push({
+          category: state.currentStatCategory,
           userGuess: roundedGuess,
           actualStat: target,
-          completedAt: Date.now()
-        };
-
-        saveDailyCompletionRecord(completionRecord);
-        await postScoreToGlobalLeaderboard({
-          name: completionRecord.name,
-          score: completionRecord.score,
-          completedAt: completionRecord.completedAt
+          points,
+          diff
         });
+        saveDailyProgressRecord();
 
-        setTimeout(() => {
-          if (state.gameMode === 'daily') {
-            showDailyCompletedScreen(completionRecord, true);
-          }
-        }, 1600);
+        if (state.dailyRoundIndex + 1 < DAILY_ROUND_SEQUENCE.length) {
+          const nextCat = DAILY_ROUND_SEQUENCE[state.dailyRoundIndex + 1];
+          nextLabel.textContent = `Next: ${nextCat} (${state.dailyRoundIndex + 2}/3)`;
+        } else {
+          nextLabel.textContent = 'View Combined Score';
+        }
+
+        nextContainer.classList.remove('hidden');
+        nextBtn.focus();
       } else {
-        // Infinite modes do not track points or rounds
-        document.getElementById('next-action-container').classList.remove('hidden');
-        document.getElementById('next-player-btn').focus();
+        nextLabel.textContent = 'Next Player';
+        nextContainer.classList.remove('hidden');
+        nextBtn.focus();
       }
     }
 
@@ -1819,10 +1871,10 @@
     }
 
     document.addEventListener('keydown', (e) => {
-      if (state.gameMode !== 'daily' && state.roundAnswered && e.key === 'Enter') {
+      if (state.roundAnswered && e.key === 'Enter') {
         if (document.activeElement?.tagName !== 'BUTTON') {
           e.preventDefault();
-          nextInfiniteRound();
+          handleNextAction();
         }
       }
     });
