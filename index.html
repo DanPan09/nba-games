@@ -1235,8 +1235,8 @@
                     fullName: (a.displayName || a.fullName).trim(),
                     firstName: a.firstName,
                     lastName: a.lastName,
-                    teamName: team.displayName || team.name || 'NBA',
-                    teamAbbr: team.abbreviation || 'NBA',
+                    teamName: data?.team?.displayName || team.displayName || team.name || 'NBA',
+                    teamAbbr: data?.team?.abbreviation || team.abbreviation || 'NBA',
                     jersey: a.jersey || '?',
                     position: a.position?.abbreviation || a.position?.name || 'NBA',
                     headshot: a.headshot?.href || exactEspnHeadshot,
@@ -1576,8 +1576,9 @@
         };
         missedImg.src = missed.headshot;
         document.getElementById('daily-missed-name').textContent = missed.fullName;
-        const liveMatch = state.players.find(p => p.fullName === missed.fullName && p.teamName && p.teamName !== 'Active NBA Roster');
-        const displayTeam = (missed.teamName && missed.teamName !== 'Active NBA Roster')
+        const isGeneric = (t) => !t || t === 'NBA' || t === 'Active NBA Roster';
+        const liveMatch = state.players.find(p => p.fullName === missed.fullName && !isGeneric(p.teamName));
+        const displayTeam = !isGeneric(missed.teamName)
           ? missed.teamName
           : (liveMatch ? liveMatch.teamName : 'NBA');
         document.getElementById('daily-missed-meta').textContent = displayTeam;
