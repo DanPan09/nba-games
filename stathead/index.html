@@ -1771,7 +1771,7 @@
 
       document.getElementById('revealed-user-guess').textContent = roundedGuess.toFixed(1);
       document.getElementById('revealed-actual-stat').textContent = target.toFixed(1);
-      document.getElementById('revealed-diff').textContent = diff === 0 ? '0.0 (Exact!)' : `±${diff.toFixed(1)}`;
+      document.getElementById('revealed-diff').textContent = diff === 0 ? '0.0 (Exact!)' : `${diff.toFixed(1)}`;
       document.getElementById('revealed-gp-note').textContent =
         `Official ${NBA_SEASON_LABEL} Regular Season average across ${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played prior to today.`;
 
