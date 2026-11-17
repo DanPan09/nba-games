@@ -1771,9 +1771,9 @@
 
       document.getElementById('revealed-user-guess').textContent = roundedGuess.toFixed(1);
       document.getElementById('revealed-actual-stat').textContent = target.toFixed(1);
-      document.getElementById('revealed-diff').textContent = diff === 0 ? '0.0 (Exact!)' : `${diff.toFixed(1)}`;
+      document.getElementById('revealed-diff').textContent = diff === 0 ? '0.0 (!!!)' : `${diff.toFixed(1)}`;
       document.getElementById('revealed-gp-note').textContent =
-        `Official ${NBA_SEASON_LABEL} Regular Season average across ${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played prior to today.`;
+        `${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played in ${NBA_SEASON_LABEL}.`;
 
       if (points === 100) {
         badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
