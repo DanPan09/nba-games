@@ -181,7 +181,7 @@
         <!-- Loading Screen State -->
         <div id="loading-screen" class="w-full py-20 flex flex-col items-center justify-center text-center gap-3">
           <div class="w-10 h-10 rounded-full border-4 border-zinc-800 border-t-orange-500 animate-spin" role="status" aria-label="Loading"></div>
-          <p id="loading-status-text" class="text-xs font-semibold text-zinc-400">Syncing live NBA players &amp; ESPN stat logs...</p>
+          <p id="loading-status-text" class="text-xs font-semibold text-zinc-400">Syncing live 2026-27 NBA players &amp; ESPN stat logs...</p>
         </div>
 
         <!-- Error / Retry Screen State -->
@@ -202,8 +202,8 @@
         <!-- Active Game Area -->
         <div id="game-card" class="hidden w-full animate-pop">
 
-          <!-- 3-Button Gamemode Toggle + Infinite Score Pill -->
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <!-- 3-Button Gamemode Toggle -->
+          <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-4">
             <div role="tablist" aria-label="Stathead Gamemodes" class="inline-flex flex-wrap p-1 bg-zinc-900 border border-zinc-800 rounded-xl gap-1">
               <button
                 type="button"
@@ -246,65 +246,14 @@
                 <span>Infinite Random</span>
               </button>
             </div>
-
-            <!-- Infinite Mode Score Counter -->
-            <div id="infinite-score-bar" class="hidden inline-flex items-center gap-2">
-              <div class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center gap-1.5 text-xs sm:text-sm font-bold">
-                <span class="text-zinc-400">Pts:</span>
-                <span id="infinite-total-pts" class="text-emerald-400 font-black tabular-nums">0</span>
-              </div>
-              <div class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center gap-1.5 text-xs sm:text-sm font-bold">
-                <span class="text-zinc-400">Rounds:</span>
-                <span id="infinite-rounds-count" class="text-white font-black tabular-nums">0</span>
-              </div>
-            </div>
           </div>
 
           <!-- DAILY MODE: Pre-Start Lobby Screen -->
           <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
             <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Daily Stathead Challenge</h2>
             <p class="text-sm text-zinc-400 max-w-md mx-auto mb-5 leading-relaxed">
-              Guess today's featured <span class="text-orange-400 font-bold">NBA starter's</span> exact season average going into today.
+              Guess today's featured <span class="text-orange-400 font-bold">NBA starter's</span> exact 2026–27 season average going into today.
             </p>
-
-            <!-- Compact Scoring Reference -->
-            <div class="max-w-md mx-auto mb-5 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3.5 text-left">
-              <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2 text-center">Scoring Breakdown (Rounded to 0.1)</div>
-              <div class="grid grid-cols-4 gap-1.5 text-center text-[11px]">
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">≤ 0.2 off</div>
-                  <div class="text-emerald-400 font-black">80 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">≤ 0.4 off</div>
-                  <div class="text-emerald-300 font-black">70 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">≤ 0.6 off</div>
-                  <div class="text-amber-300 font-black">60 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">≤ 0.8 off</div>
-                  <div class="text-amber-400 font-black">50 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">≤ 1.0 off</div>
-                  <div class="text-orange-400 font-black">40 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">&lt; 3.0 off</div>
-                  <div class="text-zinc-200 font-black">20 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">= 3.0 off</div>
-                  <div class="text-zinc-300 font-black">10 pts</div>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-1">
-                  <div class="text-zinc-400 font-semibold">&gt; 3.0 off</div>
-                  <div class="text-red-400 font-black">0 pts</div>
-                </div>
-              </div>
-            </div>
 
             <div class="max-w-xs mx-auto mb-5">
               <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
@@ -356,7 +305,7 @@
             </p>
 
             <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-1">
-              <span id="daily-final-score" class="text-orange-400">0</span> / 80 Points
+              <span id="daily-final-score" class="text-orange-400">0</span> / 100 Points
             </h2>
             <p class="text-xs text-zinc-400 mb-4">
               Come back at 12:00 AM EST for tomorrow's starter (<span id="daily-completed-countdown" class="font-mono text-amber-400 font-bold">--:--:--</span>)
@@ -421,7 +370,7 @@
                   Daily Starter
                 </span>
                 <span id="games-context-badge" class="text-zinc-400 font-semibold">
-                  Through Yesterday
+                  2026-27 Through Yesterday
                 </span>
               </div>
 
@@ -449,7 +398,7 @@
 
               <!-- Target Stat Category Callout -->
               <div class="mt-4 inline-flex flex-col items-center px-5 py-2.5 rounded-2xl bg-zinc-950/90 border border-orange-500/40 shadow-lg">
-                <span class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400">Predict Season Average</span>
+                <span class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400">Predict 2026-27 Average</span>
                 <span id="target-stat-name" class="text-lg sm:text-xl font-black text-orange-400 tracking-tight uppercase mt-0.5">POINTS</span>
               </div>
             </div>
@@ -464,7 +413,7 @@
                 </div>
                 <div class="h-8 w-px bg-zinc-800"></div>
                 <div>
-                  <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Actual (Pre-Today)</div>
+                  <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">2026-27 Actual</div>
                   <div id="revealed-actual-stat" class="text-xl sm:text-2xl font-black text-emerald-400 tabular-nums">--</div>
                 </div>
                 <div class="h-8 w-px bg-zinc-800"></div>
@@ -486,7 +435,7 @@
                   min="0"
                   inputmode="decimal"
                   autocomplete="off"
-                  placeholder="Enter average (e.g. 24.5)..."
+                  placeholder="Enter 2026-27 average (e.g. 24.5)..."
                   class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 text-sm sm:text-base font-semibold outline-none transition tabular-nums"
                 />
                 <button
@@ -528,13 +477,20 @@
 
       <!-- Footer -->
       <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
-        <span id="footer-source-text">Official ESPN game-by-game logs verified strictly prior to today's slate.</span>
+        <span id="footer-source-text">Official 2026-27 NBA Regular Season ESPN logs verified strictly prior to today's slate.</span>
       </footer>
 
     </div>
   </div>
 
   <script>
+    /**
+     * 2026-27 NBA Regular Season Constants (ESPN indexes seasons by ending calendar year)
+     */
+    const NBA_SEASON_YEAR = 2027;
+    const NBA_SEASON_LABEL = '2026-27';
+    const NBA_REGULAR_SEASON_TYPE = 2;
+
     /**
      * Global Leaderboard Configuration (Supabase REST)
      */
@@ -601,18 +557,19 @@
      * Global Game State
      */
     const state = {
-      players: [],                  // All active NBA players
-      playerMap: new Map(),         // Keyed by canonical ID
-      teamCache: new Map(),         // team $ref -> { displayName, abbreviation }
-      verifiedStatsCache: new Map(),// espnId -> { pts, ast, reb, stl, blk, gp, gs, isStarter }
-      invalidPlayerIds: new Set(),  // Players with 0 games played prior to today
+      players: [],                   // Active NBA players
+      playerMap: new Map(),          // Keyed by canonical ID
+      teamCache: new Map(),          // team $ref -> { displayName, abbreviation }
+      athleteMetaCache: new Map(),   // espnId -> { jersey, position }
+      verifiedStatsCache: new Map(), // espnId -> { pts, ast, reb, stl, blk, gp, gs, isStarter }
+      invalidPlayerIds: new Set(),   // Players with 0 games played in 2026-27 regular season prior to today
       brokenImageIds: new Set(),
       sourceErrors: [],
 
-      todayDateKey: '',             // YYYY-MM-DD in America/New_York
-      todayEventIds: new Set(),     // ESPN event IDs scheduled/live/finished today
+      todayDateKey: '',              // YYYY-MM-DD in America/New_York
+      todayEventIds: new Set(),      // ESPN event IDs scheduled/live/finished today
 
-      gameMode: 'daily',            // 'daily' | 'infinite_points' | 'infinite_random'
+      gameMode: 'daily',             // 'daily' | 'infinite_points' | 'infinite_random'
       currentPlayer: null,
       currentStatCategory: 'Points',
       currentVerifiedStat: null,
@@ -627,22 +584,25 @@
       dailyStarter: null,
       dailyCategory: 'Points',
 
-      // Infinite Modes persistent totals
-      infPointsTotal: 0,
-      infPointsRounds: 0,
-      infRandomTotal: 0,
-      infRandomRounds: 0,
+      // Infinite Modes unseen pools
       usedInfinitePointsIds: new Set(),
       usedInfiniteRandomIds: new Set()
     };
 
-    // Live API Endpoints (Matching EBK's multi-source fallback + CORS-open ESPN Core v2/v3)
+    // Live API Endpoints (2026-27 NBA Regular Season Locked)
     const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
     const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?enable=stats`;
     const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
     const ESPN_CORE_EVENTS_URL = (yyyymmdd) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events?dates=${yyyymmdd}`;
-    const ESPN_CORE_STATS_URL = (athleteId) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/athletes/${athleteId}/statistics`;
-    const ESPN_CORE_EVENTLOG_URL = (athleteId) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/athletes/${athleteId}/eventlog?limit=10`;
+
+    // Strictly scoped to the 2026-27 NBA Regular Season (seasons/2027/types/2)
+    const ESPN_CORE_SEASON_STATS_URL = (athleteId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`;
+    const ESPN_CORE_SEASON_EVENTLOG_URL = (athleteId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}/eventlog?limit=15`;
+    const ESPN_CORE_SEASON_ATHLETE_URL = (athleteId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}`;
+
     const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
 
     function toHttps(url) {
@@ -731,7 +691,7 @@
     }
 
     /**
-     * Exact Fetch Helper from EBK (CORS-clean with AbortController timeout)
+     * Strict CORS Fetch Helper with AbortController Timeout
      */
     async function fetchJsonStrict(url, timeoutMs = 6500) {
       const controller = new AbortController();
@@ -758,7 +718,7 @@
     }
 
     /**
-     * JSONP <script> loader for Wikipedia MediaWiki API (from EBK)
+     * JSONP <script> loader for Wikipedia MediaWiki API
      */
     function fetchWikipediaJsonp(timeoutMs = 5500) {
       return new Promise((resolve, reject) => {
@@ -800,7 +760,7 @@
     }
 
     /**
-     * Normalize and merge newly fetched players into the live pool (from EBK)
+     * Normalize and merge newly fetched players into the live pool
      */
     function addPlayersToPool(newPlayers, sourceLabel) {
       let changed = 0;
@@ -840,7 +800,7 @@
         state.players = Array.from(state.playerMap.values());
         const footerEl = document.getElementById('footer-source-text');
         if (footerEl) {
-          footerEl.textContent = `Official ESPN game-by-game logs verified prior to today via ${sourceLabel}.`;
+          footerEl.textContent = `Official ${NBA_SEASON_LABEL} NBA Regular Season ESPN logs verified prior to today via ${sourceLabel}.`;
         }
       }
       return changed;
@@ -865,7 +825,7 @@
     }
 
     /**
-     * SOURCE A (Primary): ESPN Public Roster API (from EBK)
+     * SOURCE A (Primary): ESPN Public Roster API
      */
     async function fetchSourceA_EspnRosters(sessionId) {
       const teamsData = await fetchJsonStrict(ESPN_TEAMS_URL, 5500);
@@ -934,11 +894,11 @@
     }
 
     /**
-     * SOURCE B (Backup 1 - CORS-Open on GitHub Pages): ESPN Core V3 Active Athletes API (from EBK)
+     * SOURCE B (CORS-Open on GitHub Pages): ESPN Core V3 Active Athletes API
      */
     async function fetchSourceB_EspnCoreAthletes(sessionId) {
       const statusEl = document.getElementById('loading-status-text');
-      if (statusEl) statusEl.textContent = 'Syncing active NBA athletes via ESPN Core V3...';
+      if (statusEl) statusEl.textContent = `Syncing active ${NBA_SEASON_LABEL} NBA athletes via ESPN Core V3...`;
 
       const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 7000);
       if (sessionId !== state.loadSessionId) return;
@@ -965,7 +925,7 @@
     }
 
     /**
-     * SOURCE C (Backup 2): Wikipedia MediaWiki API (from EBK)
+     * SOURCE C (Backup): Wikipedia MediaWiki API
      */
     async function fetchSourceC_Wikipedia(sessionId) {
       let wikiData;
@@ -1003,7 +963,7 @@
     }
 
     /**
-     * Master Multi-Source Live NBA Pipeline (Exact EBK Architecture + Today's Events)
+     * Master Multi-Source Live NBA Pipeline
      */
     async function fetchLiveNbaPlayers(sessionId) {
       state.sourceErrors = [];
@@ -1058,35 +1018,56 @@
     }
 
     /**
-     * Resolve Player's Team Name from ESPN Core v2 Team $ref (Cached)
+     * Resolve Player's 2026-27 Team Name & Jersey/Position Metadata (Cached)
      */
-    async function hydratePlayerTeamIfNeeded(player, teamRef) {
-      if (!teamRef || (player.teamName && player.teamName !== 'Active NBA Roster' && player.teamName !== 'NBA')) {
-        return;
+    async function hydratePlayerSeasonMeta(player, teamRef) {
+      const aid = String(player.espnId || '');
+
+      if (teamRef && (!player.teamName || player.teamName === 'Active NBA Roster' || player.teamName === 'NBA')) {
+        const secureRef = toHttps(teamRef);
+        if (state.teamCache.has(secureRef)) {
+          const cached = state.teamCache.get(secureRef);
+          player.teamName = cached.displayName;
+          player.teamAbbr = cached.abbreviation;
+        } else {
+          try {
+            const teamData = await fetchJsonStrict(secureRef, 4500);
+            const info = {
+              displayName: teamData?.displayName || teamData?.name || 'NBA',
+              abbreviation: teamData?.abbreviation || 'NBA'
+            };
+            state.teamCache.set(secureRef, info);
+            player.teamName = info.displayName;
+            player.teamAbbr = info.abbreviation;
+          } catch (_) {}
+        }
       }
-      const secureRef = toHttps(teamRef);
-      if (state.teamCache.has(secureRef)) {
-        const cached = state.teamCache.get(secureRef);
-        player.teamName = cached.displayName;
-        player.teamAbbr = cached.abbreviation;
-        return;
+
+      if (aid && (player.jersey === '?' || player.position === 'NBA')) {
+        if (state.athleteMetaCache.has(aid)) {
+          const meta = state.athleteMetaCache.get(aid);
+          if (meta.jersey) player.jersey = meta.jersey;
+          if (meta.position) player.position = meta.position;
+        } else {
+          try {
+            const athData = await fetchJsonStrict(ESPN_CORE_SEASON_ATHLETE_URL(aid), 4500);
+            const meta = {
+              jersey: athData?.jersey ? String(athData.jersey) : '?',
+              position: athData?.position?.abbreviation || athData?.position?.name || 'NBA'
+            };
+            state.athleteMetaCache.set(aid, meta);
+            player.jersey = meta.jersey;
+            player.position = meta.position;
+          } catch (_) {}
+        }
       }
-      try {
-        const teamData = await fetchJsonStrict(secureRef, 4500);
-        const info = {
-          displayName: teamData?.displayName || teamData?.name || 'NBA',
-          abbreviation: teamData?.abbreviation || 'NBA'
-        };
-        state.teamCache.set(secureRef, info);
-        player.teamName = info.displayName;
-        player.teamAbbr = info.abbreviation;
-      } catch (_) {}
     }
 
     /**
-     * CRITICAL ACCURACY ENGINE (CORS-Open ESPN Core v2):
-     * Fetches official season stats + eventlog, excludes any game played TODAY in EST,
-     * and returns { gp, gs, isStarter, pts, reb, ast, stl, blk } strictly GOING INTO TODAY.
+     * STRICT 2026-27 NBA REGULAR SEASON ACCURACY ENGINE (CORS-Open ESPN Core v2):
+     * Fetches ONLY `seasons/2027/types/2/athletes/{id}/statistics` and `seasons/2027/athletes/{id}/eventlog`,
+     * rejects any player who has not played in the 2026-27 regular season, excludes any game played TODAY in EST,
+     * and returns { gp, gs, isStarter, pts, reb, ast, stl, blk } strictly GOING INTO TODAY for 2026-27.
      */
     async function getVerifiedPreTodayStats(player) {
       if (!player || !player.espnId || !/^\d+$/.test(player.espnId)) return null;
@@ -1101,18 +1082,22 @@
 
       try {
         const [statsData, logData] = await Promise.all([
-          fetchJsonStrict(ESPN_CORE_STATS_URL(aid), 6000),
-          fetchJsonStrict(ESPN_CORE_EVENTLOG_URL(aid), 6000).catch(() => null)
+          fetchJsonStrict(ESPN_CORE_SEASON_STATS_URL(aid), 6000),
+          fetchJsonStrict(ESPN_CORE_SEASON_EVENTLOG_URL(aid), 6000).catch(() => null)
         ]);
 
-        if (statsData?.team?.$ref) {
-          await hydratePlayerTeamIfNeeded(player, statsData.team.$ref);
+        // Double-verify that ESPN returned the 2026-27 season (seasons/2027)
+        const seasonRef = String(statsData?.season?.$ref || '');
+        if (seasonRef && !seasonRef.includes(`/seasons/${NBA_SEASON_YEAR}`)) {
+          state.invalidPlayerIds.add(aid);
+          return null;
         }
 
         const sMap = parseCoreStatsCategories(statsData);
         const gp = sMap.gamesPlayed || 0;
         const gs = sMap.gamesStarted || 0;
 
+        // Must have played at least 1 game in the 2026-27 NBA Regular Season
         if (gp < 1) {
           state.invalidPlayerIds.add(aid);
           return null;
@@ -1125,7 +1110,7 @@
         let totalBlk = sMap.blocks ?? ((sMap.avgBlocks || 0) * gp);
         let preTodayGp = gp;
 
-        // Check if player has a played/live game in today's EST slate and subtract it
+        // Check if player has a played/live game in today's EST slate and subtract it from 2026-27 totals
         const logItems = Array.isArray(logData?.events?.items) ? logData.events.items : [];
         for (const item of logItems) {
           if (!item || item.played !== true) continue;
@@ -1143,13 +1128,15 @@
                 totalStl = Math.max(0, totalStl - (gMap.steals || 0));
                 totalBlk = Math.max(0, totalBlk - (gMap.blocks || 0));
               } else {
-                // Only game all season was played today -> 0 games prior to today
+                // Player's only 2026-27 game was played today -> 0 games prior to today
                 state.invalidPlayerIds.add(aid);
                 return null;
               }
             } catch (_) {}
           }
         }
+
+        await hydratePlayerSeasonMeta(player, statsData?.team?.$ref);
 
         const isStarter = (gp >= 2 && (gs / gp) >= 0.5) || (gp === 1 && gs === 1);
         const result = {
@@ -1172,14 +1159,15 @@
     }
 
     /**
-     * Exact Stathead Scoring Formula
+     * Exact Stathead Scoring Formula (100 points for a perfect guess)
      */
     function calculateStatheadPoints(roundedGuess, actualStat) {
       const target = Math.round(actualStat * 10) / 10;
       const diff = Math.round(Math.abs(roundedGuess - target) * 10) / 10;
 
       let points = 0;
-      if (diff <= 0.2) points = 80;
+      if (diff === 0) points = 100;
+      else if (diff <= 0.2) points = 80;
       else if (diff <= 0.4) points = 70;
       else if (diff <= 0.6) points = 60;
       else if (diff <= 0.8) points = 50;
@@ -1372,42 +1360,11 @@
     }
 
     /**
-     * Persistent Infinite Mode Scores
-     */
-    function loadInfiniteTotals() {
-      state.infPointsTotal = Math.max(0, parseInt(safeGetStorage('stathead_inf_pts_total') || '0', 10) || 0);
-      state.infPointsRounds = Math.max(0, parseInt(safeGetStorage('stathead_inf_pts_rounds') || '0', 10) || 0);
-      state.infRandomTotal = Math.max(0, parseInt(safeGetStorage('stathead_inf_rnd_total') || '0', 10) || 0);
-      state.infRandomRounds = Math.max(0, parseInt(safeGetStorage('stathead_inf_rnd_rounds') || '0', 10) || 0);
-    }
-
-    function saveInfiniteTotals() {
-      safeSetStorage('stathead_inf_pts_total', String(state.infPointsTotal));
-      safeSetStorage('stathead_inf_pts_rounds', String(state.infPointsRounds));
-      safeSetStorage('stathead_inf_rnd_total', String(state.infRandomTotal));
-      safeSetStorage('stathead_inf_rnd_rounds', String(state.infRandomRounds));
-    }
-
-    function updateInfiniteScoreUI() {
-      const ptsEl = document.getElementById('infinite-total-pts');
-      const roundsEl = document.getElementById('infinite-rounds-count');
-      if (!ptsEl || !roundsEl) return;
-
-      if (state.gameMode === 'infinite_points') {
-        ptsEl.textContent = String(state.infPointsTotal);
-        roundsEl.textContent = String(state.infPointsRounds);
-      } else if (state.gameMode === 'infinite_random') {
-        ptsEl.textContent = String(state.infRandomTotal);
-        roundsEl.textContent = String(state.infRandomRounds);
-      }
-    }
-
-    /**
-     * Determine Today's Deterministic Daily Starter & Stat Category
+     * Determine Today's Deterministic Daily Starter & Stat Category (2026-27 Season)
      */
     async function resolveDailyStarterChallenge() {
       const { dateKey } = getEstDateInfo();
-      const rng = mulberry32(hashString('STATHEAD_DAILY_V1_' + dateKey));
+      const rng = mulberry32(hashString(`STATHEAD_DAILY_${NBA_SEASON_YEAR}_${dateKey}`));
 
       const catIndex = Math.floor(rng() * STAT_CATEGORIES.length);
       const chosenCategory = STAT_CATEGORIES[catIndex];
@@ -1437,7 +1394,7 @@
             fallbackActive = { player: candidate, category: chosenCategory, stats };
           }
         }
-        if (checked >= 35 && fallbackActive) {
+        if (checked >= 40 && fallbackActive) {
           break;
         }
       }
@@ -1477,7 +1434,7 @@
         };
         img.src = record.headshot || '';
         document.getElementById('daily-recap-stat-label').textContent =
-          `${record.statCategory.toUpperCase()} PER GAME (${STAT_META[record.statCategory]?.abbr || ''})`;
+          `${NBA_SEASON_LABEL} ${record.statCategory.toUpperCase()} PER GAME (${STAT_META[record.statCategory]?.abbr || ''})`;
         document.getElementById('daily-recap-player-name').textContent = record.playerName;
         document.getElementById('daily-recap-numbers').innerHTML =
           `Your guess: <strong class="text-white">${Number(record.userGuess).toFixed(1)}</strong> • Actual: <strong class="text-emerald-400">${Number(record.actualStat).toFixed(1)}</strong>`;
@@ -1497,7 +1454,6 @@
       const dailyBtn = document.getElementById('mode-daily-btn');
       const infPtsBtn = document.getElementById('mode-inf-points-btn');
       const infRndBtn = document.getElementById('mode-inf-random-btn');
-      const infScoreBar = document.getElementById('infinite-score-bar');
 
       const activeClass = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-orange-600 text-white shadow transition flex items-center gap-1.5';
       const inactiveClass = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition flex items-center gap-1.5';
@@ -1511,8 +1467,6 @@
       const cardSurface = document.getElementById('card-surface');
 
       if (mode === 'daily') {
-        infScoreBar.classList.add('hidden');
-
         const existingRecord = getDailyCompletionRecord();
         if (existingRecord) {
           showDailyCompletedScreen(existingRecord, false);
@@ -1529,9 +1483,6 @@
         dailyOver.classList.add('hidden');
         cardSurface.classList.add('hidden');
       } else {
-        infScoreBar.classList.remove('hidden');
-        updateInfiniteScoreUI();
-
         dailyStart.classList.add('hidden');
         dailyOver.classList.add('hidden');
         cardSurface.classList.remove('hidden');
@@ -1575,7 +1526,7 @@
       const origBtnHtml = startBtn ? startBtn.innerHTML : '';
       if (startBtn) {
         startBtn.disabled = true;
-        startBtn.textContent = 'Verifying Starter Stats...';
+        startBtn.textContent = `Verifying ${NBA_SEASON_LABEL} Starter...`;
       }
 
       const resolved = await resolveDailyStarterChallenge();
@@ -1594,7 +1545,7 @@
     }
 
     /**
-     * Pick and Verify Next Player for Infinite Points / Infinite Random
+     * Pick and Verify Next Player for Infinite Points / Infinite Random (2026-27 Season Only)
      */
     async function nextInfiniteRound() {
       const reqToken = ++state.roundRequestToken;
@@ -1610,7 +1561,7 @@
       inputEl.disabled = true;
       submitBtn.disabled = true;
       feedbackEl.className = 'font-semibold text-amber-400';
-      feedbackEl.textContent = 'Verifying pre-today ESPN game log...';
+      feedbackEl.textContent = `Verifying ${NBA_SEASON_LABEL} ESPN game log...`;
 
       const validPool = state.players.filter(
         p => p.espnId && /^\d+$/.test(p.espnId) && !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(p.id)
@@ -1661,7 +1612,7 @@
       state.roundAnswered = false;
 
       document.getElementById('roster-mode-badge').textContent = badgeLabel;
-      document.getElementById('games-context-badge').textContent = `${verifiedStats.gp} GP Through Yesterday`;
+      document.getElementById('games-context-badge').textContent = `${NBA_SEASON_LABEL} • ${verifiedStats.gp} GP Pre-Today`;
       document.getElementById('player-name-heading').textContent = player.fullName;
       document.getElementById('player-meta-sub').textContent = `${player.teamName} • #${player.jersey} • ${player.position}`;
       document.getElementById('target-stat-name').textContent = `${statCategory.toUpperCase()} (${statInfo.abbr})`;
@@ -1763,9 +1714,14 @@
       document.getElementById('revealed-actual-stat').textContent = target.toFixed(1);
       document.getElementById('revealed-diff').textContent = diff === 0 ? '0.0 (Exact!)' : `±${diff.toFixed(1)}`;
       document.getElementById('revealed-gp-note').textContent =
-        `Official ESPN average across ${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played prior to today.`;
+        `Official ${NBA_SEASON_LABEL} Regular Season average across ${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played prior to today.`;
 
-      if (points >= 60) {
+      if (points === 100) {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+        badge.textContent = `+100 Points • Perfect Guess!`;
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-emerald-400/70 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-emerald-500/25 blur-2xl rounded-full transition-colors duration-300';
+      } else if (points >= 60) {
         badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
         badge.textContent = `+${points} Points • Elite Accuracy!`;
         cardSurface.className = 'bg-zinc-900/90 border-2 border-emerald-500/60 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
@@ -1817,16 +1773,7 @@
           }
         }, 1600);
       } else {
-        if (state.gameMode === 'infinite_points') {
-          state.infPointsTotal += points;
-          state.infPointsRounds += 1;
-        } else {
-          state.infRandomTotal += points;
-          state.infRandomRounds += 1;
-        }
-        saveInfiniteTotals();
-        updateInfiniteScoreUI();
-
+        // Infinite modes do not track points or rounds
         document.getElementById('next-action-container').classList.remove('hidden');
         document.getElementById('next-player-btn').focus();
       }
@@ -1842,7 +1789,6 @@
       state.verifiedStatsCache.clear();
       state.invalidPlayerIds.clear();
       state.brokenImageIds.clear();
-      loadInfiniteTotals();
 
       document.getElementById('loading-screen').classList.remove('hidden');
       document.getElementById('error-screen').classList.add('hidden');
