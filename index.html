@@ -1081,6 +1081,11 @@
             existing.headshot = p.headshot;
             changed++;
           }
+          if (p.teamName && p.teamName !== 'NBA' && p.teamName !== 'Active NBA Roster' && existing.teamName !== p.teamName) {
+            existing.teamName = p.teamName;
+            existing.teamAbbr = p.teamAbbr || existing.teamAbbr;
+            changed++;
+          }
         }
       }
 
@@ -1571,8 +1576,11 @@
         };
         missedImg.src = missed.headshot;
         document.getElementById('daily-missed-name').textContent = missed.fullName;
-        const mpgText = typeof missed.mpg === 'number' && missed.mpg > 0 ? ` • ${missed.mpg.toFixed(1)} MPG` : '';
-        document.getElementById('daily-missed-meta').textContent = `${missed.teamName} • #${missed.jersey} • ${missed.position}${mpgText}`;
+        const liveMatch = state.players.find(p => p.fullName === missed.fullName && p.teamName && p.teamName !== 'Active NBA Roster');
+        const displayTeam = (missed.teamName && missed.teamName !== 'Active NBA Roster')
+          ? missed.teamName
+          : (liveMatch ? liveMatch.teamName : 'NBA');
+        document.getElementById('daily-missed-meta').textContent = displayTeam;
       } else {
         missedBox.classList.add('hidden');
       }
@@ -1881,9 +1889,13 @@
     function preparePlayerCardUI() {
       const reqToken = ++state.imageRequestToken;
       const playerSnapshot = state.currentPlayer;
-
-      document.getElementById('round-indicator').textContent = `Player #${state.roundNumber}`;
-
+      const roundIndicatorEl = document.getElementById('round-indicator');
+      if (state.gameMode === 'infinite') {
+        roundIndicatorEl.classList.add('hidden');
+      } else {
+        roundIndicatorEl.classList.remove('hidden');
+        roundIndicatorEl.textContent = `Player #${state.roundNumber}`;
+      }
       document.getElementById('reveal-banner').classList.add('hidden');
       document.getElementById('next-action-container').classList.add('hidden');
       document.getElementById('card-surface').className =
