@@ -1162,7 +1162,6 @@
       }
 
       logDiag(`Source A: Found ${teams.length} teams. Streaming rosters & >10 MPG stats...`, 'ok');
-      document.getElementById('loading-status').textContent = `Found ${teams.length} NBA teams — streaming rosters & >10 MPG stats...`;
       document.getElementById('loading-bar').style.width = '30%';
 
       // Deterministic team order so daily seed builds consistently across browsers
@@ -1251,7 +1250,6 @@
      */
     async function fetchSourceB_EspnCoreAthletes(sessionId) {
       logDiag('Source B: Fetching active NBA athletes via ESPN Core V3 (single request)...', 'warn');
-      document.getElementById('loading-status').textContent = 'Querying ESPN Core V3 Active Athletes...';
       document.getElementById('loading-bar').style.width = '55%';
 
       const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 6500);
@@ -1291,7 +1289,6 @@
      */
     async function fetchSourceC_Wikipedia(sessionId) {
       logDiag('Source C: Querying Wikipedia MediaWiki Current NBA Players (CORS + JSONP)...', 'warn');
-      document.getElementById('loading-status').textContent = 'Fetching Current NBA Players via Wikipedia API...';
       document.getElementById('loading-bar').style.width = '78%';
 
       let wikiData;
@@ -1496,7 +1493,6 @@
       const loadingScreen = document.getElementById('loading-screen');
       const errorScreen = document.getElementById('error-screen');
       const gameCard = document.getElementById('game-card');
-      const loadingStatus = document.getElementById('loading-status');
       const loadingBar = document.getElementById('loading-bar');
       const logEl = document.getElementById('loading-log');
       const startNowBtn = document.getElementById('start-now-btn');
