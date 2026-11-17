@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ball Knowledge Central | NBA Imposter</title>
-  <link rel="icon" type="image/png" href="/nba-games/Icon.png" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%23f97316'/><path d='M6.5 6.5c3.5 3.5 3.5 7.5 0 11M17.5 6.5c-3.5 3.5-3.5 7.5 0 11M2 12h20M12 2v20' fill='none' stroke='%2318181b' stroke-width='1.8'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
@@ -72,7 +72,7 @@
   <!-- Below-Header Row: Left Sidebar + Main Workspace -->
   <div class="app-body-row flex-1 flex flex-col md:flex-row min-w-0">
 
-    <!-- Left Sidebar Navigation (Uniform across Home, EBK, and Imposter) -->
+    <!-- Left Sidebar Navigation -->
     <aside class="app-sidebar w-full md:w-60 bg-zinc-950/90 border-b md:border-b-0 md:border-r border-zinc-800/80 backdrop-blur-md flex flex-row md:flex-col justify-between px-4 py-3 md:p-4 shrink-0 z-30">
       <nav aria-label="Game Switcher" class="flex flex-row md:flex-col gap-1.5 flex-1 md:flex-initial">
 
@@ -195,9 +195,8 @@
             </div>
           </div>
 
-          <!-- Status message while Current roster loads if needed -->
           <p id="start-status-msg" class="hidden text-xs font-semibold text-amber-400 mb-4">
-            Loading live NBA roster...
+            Preparing player card...
           </p>
 
           <button
@@ -238,7 +237,7 @@
             type="button"
             id="secret-card-btn"
             onclick="toggleCardReveal()"
-            class="w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6"
+            class="w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6"
           >
             <!-- Face-Down State -->
             <div id="card-hidden-face" class="flex flex-col items-center justify-center">
@@ -253,20 +252,45 @@
             </div>
 
             <!-- Face-Up Revealed State -->
-            <div id="card-revealed-face" class="hidden flex flex-col items-center justify-center">
-              <span id="card-role-label" class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-2">
+            <div id="card-revealed-face" class="hidden flex flex-col items-center justify-center w-full">
+              <!-- Player Headshot Container (shown for Crewmates) -->
+              <div id="card-headshot-wrap" class="hidden mb-3">
+                <div class="w-24 h-24 rounded-2xl bg-zinc-900 border border-zinc-700/80 overflow-hidden flex items-center justify-center shadow-lg">
+                  <img
+                    id="card-headshot-img"
+                    src=""
+                    alt=""
+                    class="w-full h-full object-cover object-top"
+                  />
+                  <div
+                    id="card-headshot-fallback"
+                    class="hidden w-full h-full items-center justify-center text-xl font-black text-orange-400 bg-zinc-900"
+                  >
+                    --
+                  </div>
+                </div>
+              </div>
+
+              <span id="card-role-label" class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-1.5">
                 Your NBA Player
               </span>
+
               <div id="card-reveal-value" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug">
                 --
               </div>
-              <span id="card-tap-hide-hint" class="text-[11px] text-zinc-500 mt-3">
+
+              <!-- 1-Word Hint Pill (shown when player entry has a hint) -->
+              <div id="card-hint-badge" class="hidden mt-2.5 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/35 text-xs font-extrabold text-orange-300 tracking-wide">
+                Hint: <span id="card-hint-text" class="text-white">--</span>
+              </div>
+
+              <span id="card-tap-hide-hint" class="text-[11px] text-zinc-500 mt-3.5">
                 Tap card to hide again
               </span>
             </div>
           </button>
 
-          <!-- Next Player Button (Unlocked once card has been viewed) -->
+          <!-- Next Player Button -->
           <button
             type="button"
             id="next-player-turn-btn"
@@ -312,30 +336,102 @@
 
   <script>
     /**
-     * All-Time NBA Legends Database
+     * Default fallback list if current-players.json cannot be fetched locally
+     */
+    const DEFAULT_CURRENT_PLAYERS = [
+      { player: 'LeBron James', hint: 'King' },
+      { player: 'Stephen Curry', hint: 'Splash' },
+      { player: 'Kevin Durant', hint: 'Slim' }
+    ];
+
+    /**
+     * All-Time NBA Legends Database (with known ESPN Athlete IDs for instant headshots)
      */
     const ALL_TIME_LEGENDS = [
-      'Michael Jordan', 'Kobe Bryant', 'Magic Johnson', 'Larry Bird', 'Kareem Abdul-Jabbar',
-      'Shaquille O\'Neal', 'Tim Duncan', 'Hakeem Olajuwon', 'Allen Iverson', 'Dirk Nowitzki',
-      'Dwyane Wade', 'Kevin Garnett', 'Charles Barkley', 'Karl Malone', 'John Stockton',
-      'Scottie Pippen', 'Dennis Rodman', 'Wilt Chamberlain', 'Bill Russell', 'Oscar Robertson',
-      'Jerry West', 'Elgin Baylor', 'Julius Erving', 'Moses Malone', 'Isiah Thomas',
-      'Clyde Drexler', 'Patrick Ewing', 'David Robinson', 'Reggie Miller', 'Gary Payton',
-      'Jason Kidd', 'Steve Nash', 'Tracy McGrady', 'Vince Carter', 'Ray Allen',
-      'Paul Pierce', 'Carmelo Anthony', 'Dwight Howard', 'Derrick Rose', 'Blake Griffin',
-      'Rajon Rondo', 'Manu Ginobili', 'Tony Parker', 'Pau Gasol', 'Yao Ming',
-      'Chris Bosh', 'Amar\'e Stoudemire', 'Chauncey Billups', 'Ben Wallace', 'Rasheed Wallace',
-      'Grant Hill', 'Penny Hardaway', 'Chris Webber', 'Peja Stojakovic', 'Gilbert Arenas',
-      'Baron Davis', 'Andre Iguodala', 'Metta World Peace', 'Lamar Odom', 'Jamal Crawford',
-      'Joakim Noah', 'Marc Gasol', 'Zach Randolph', 'Tony Allen', 'LaMarcus Aldridge',
-      'Brandon Roy', 'Shawn Kemp', 'Alonzo Mourning', 'Tim Hardaway', 'Mitch Richmond',
-      'Chris Mullin', 'Dikembe Mutombo', 'Dominique Wilkins', 'George Gervin', 'Pete Maravich',
-      'Rick Barry', 'Bill Walton', 'Willis Reed', 'Walt Frazier', 'Bob Cousy',
-      'John Havlicek', 'Kevin McHale', 'Robert Parish', 'James Worthy', 'Bob McAdoo',
-      'Dennis Johnson', 'Joe Dumars', 'Alex English', 'Adrian Dantley', 'Sidney Moncrief',
-      'Mark Price', 'Brad Daugherty', 'Larry Nance', 'Detlef Schrempf', 'Kevin Johnson',
-      'Stephon Marbury', 'Steve Francis', 'Jermaine O\'Neal', 'Michael Redd', 'Jason Terry',
-      'Shawn Marion', 'Tyson Chandler', 'Deron Williams', 'Carlos Boozer', 'Andrei Kirilenko'
+      { player: 'Michael Jordan', espnId: '1035' },
+      { player: 'Kobe Bryant', espnId: '110' },
+      { player: 'Magic Johnson', espnId: '2334' },
+      { player: 'Larry Bird', espnId: '2335' },
+      { player: 'Kareem Abdul-Jabbar', espnId: '4145' },
+      { player: 'Shaquille O\'Neal', espnId: '614' },
+      { player: 'Tim Duncan', espnId: '215' },
+      { player: 'Hakeem Olajuwon', espnId: '619' },
+      { player: 'Allen Iverson', espnId: '366' },
+      { player: 'Dirk Nowitzki', espnId: '609' },
+      { player: 'Dwyane Wade', espnId: '1987' },
+      { player: 'Kevin Garnett', espnId: '261' },
+      { player: 'Charles Barkley', espnId: '37' },
+      { player: 'Karl Malone', espnId: '501' },
+      { player: 'John Stockton', espnId: '812' },
+      { player: 'Scottie Pippen', espnId: '663' },
+      { player: 'Dennis Rodman', espnId: '726' },
+      { player: 'Wilt Chamberlain' },
+      { player: 'Bill Russell' },
+      { player: 'Oscar Robertson' },
+      { player: 'Jerry West' },
+      { player: 'Elgin Baylor' },
+      { player: 'Julius Erving' },
+      { player: 'Moses Malone' },
+      { player: 'Isiah Thomas' },
+      { player: 'Clyde Drexler' },
+      { player: 'Patrick Ewing', espnId: '233' },
+      { player: 'David Robinson', espnId: '715' },
+      { player: 'Reggie Miller', espnId: '552' },
+      { player: 'Gary Payton', espnId: '642' },
+      { player: 'Jason Kidd', espnId: '429' },
+      { player: 'Steve Nash', espnId: '592' },
+      { player: 'Tracy McGrady', espnId: '532' },
+      { player: 'Vince Carter', espnId: '136' },
+      { player: 'Ray Allen', espnId: '9' },
+      { player: 'Paul Pierce', espnId: '662' },
+      { player: 'Carmelo Anthony', espnId: '1975' },
+      { player: 'Dwight Howard', espnId: '2384' },
+      { player: 'Derrick Rose', espnId: '3456' },
+      { player: 'Blake Griffin', espnId: '3989' },
+      { player: 'Rajon Rondo', espnId: '3026' },
+      { player: 'Manu Ginobili', espnId: '272' },
+      { player: 'Tony Parker', espnId: '1015' },
+      { player: 'Pau Gasol', espnId: '996' },
+      { player: 'Yao Ming', espnId: '1722' },
+      { player: 'Chris Bosh', espnId: '1977' },
+      { player: 'Amar\'e Stoudemire', espnId: '1727' },
+      { player: 'Chauncey Billups', espnId: '63' },
+      { player: 'Ben Wallace', espnId: '885' },
+      { player: 'Rasheed Wallace', espnId: '889' },
+      { player: 'Grant Hill', espnId: '336' },
+      { player: 'Penny Hardaway', espnId: '305' },
+      { player: 'Chris Webber', espnId: '904' },
+      { player: 'Peja Stojakovic', espnId: '813' },
+      { player: 'Gilbert Arenas', espnId: '974' },
+      { player: 'Andre Iguodala', espnId: '2386' },
+      { player: 'Metta World Peace', espnId: '25' },
+      { player: 'Lamar Odom', espnId: '617' },
+      { player: 'Jamal Crawford', espnId: '165' },
+      { player: 'Joakim Noah', espnId: '3224' },
+      { player: 'Marc Gasol', espnId: '3206' },
+      { player: 'Zach Randolph', espnId: '1017' },
+      { player: 'LaMarcus Aldridge', espnId: '2983' },
+      { player: 'Brandon Roy', espnId: '3027' },
+      { player: 'Shawn Kemp', espnId: '423' },
+      { player: 'Alonzo Mourning', espnId: '575' },
+      { player: 'Tim Hardaway', espnId: '306' },
+      { player: 'Chris Mullin', espnId: '580' },
+      { player: 'Dikembe Mutombo', espnId: '586' },
+      { player: 'Dominique Wilkins' },
+      { player: 'George Gervin' },
+      { player: 'Pete Maravich' },
+      { player: 'Bill Walton' },
+      { player: 'John Havlicek' },
+      { player: 'Kevin McHale' },
+      { player: 'James Worthy' },
+      { player: 'Joe Dumars' },
+      { player: 'Mark Price' },
+      { player: 'Stephon Marbury', espnId: '506' },
+      { player: 'Steve Francis', espnId: '251' },
+      { player: 'Jermaine O\'Neal', espnId: '615' },
+      { player: 'Shawn Marion', espnId: '510' },
+      { player: 'Tyson Chandler', espnId: '984' },
+      { player: 'Deron Williams', espnId: '2798' }
     ];
 
     /**
@@ -343,106 +439,87 @@
      */
     const imposterState = {
       poolMode: 'current',      // 'current' | 'legends'
-      currentPlayers: [],       // Live active NBA players fetched from ESPN/Wikipedia
-      currentFetchPromise: null,
+      currentJsonList: [],      // Loaded from ./current-players.json
+      headshotCache: new Map(), // normalizedName -> headshotUrl
       totalPlayers: 4,
-      selectedNbaPlayer: '',
+      selectedEntry: { player: '', hint: '', headshotUrl: '' },
       imposterIndex: 0,
       turnIndex: 0,
       isRevealed: false,
       hasViewedThisTurn: false
     };
 
-    const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
-    const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster`;
-    const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
-    const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=250&format=json&origin=*';
+    const espnHeadshotFromId = (id) =>
+      `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`;
 
-    async function fetchJsonWithTimeout(url, timeoutMs = 5500) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, { signal: controller.signal, mode: 'cors', credentials: 'omit' });
-        clearTimeout(timer);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-      } catch (err) {
-        clearTimeout(timer);
-        throw err;
-      }
+    function normalizeName(str) {
+      return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     /**
-     * Load live Current NBA Players from ESPN (with Core V3 & Wikipedia fallbacks)
+     * Load your editable current-players.json file
      */
-    async function loadCurrentNbaDatabase() {
-      if (imposterState.currentPlayers.length > 0) return imposterState.currentPlayers;
-      if (imposterState.currentFetchPromise) return imposterState.currentFetchPromise;
+    async function loadCurrentJsonList() {
+      try {
+        const res = await fetch('./current-players.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          imposterState.currentJsonList = data
+            .map(item => ({
+              player: String(item.player || item.name || '').trim(),
+              hint: String(item.hint || '').trim(),
+              espnId: item.espnId ? String(item.espnId).trim() : '',
+              headshot: item.headshot ? String(item.headshot).trim() : ''
+            }))
+            .filter(item => item.player.length > 0);
+          return imposterState.currentJsonList;
+        }
+      } catch (_) {}
 
-      imposterState.currentFetchPromise = (async () => {
-        const nameSet = new Set();
+      imposterState.currentJsonList = [...DEFAULT_CURRENT_PLAYERS];
+      return imposterState.currentJsonList;
+    }
 
-        // Primary: ESPN 30-Team Rosters
-        try {
-          const teamsData = await fetchJsonWithTimeout(ESPN_TEAMS_URL, 5500);
-          const rawTeams = teamsData?.sports?.[0]?.leagues?.[0]?.teams || [];
-          const teams = rawTeams.map(t => t.team || t).filter(t => t && t.id);
+    /**
+     * Resolve an ESPN NBA headshot URL for any player name (Current or Legend)
+     */
+    async function resolvePlayerHeadshot(entry) {
+      if (entry.headshot) return entry.headshot;
+      if (entry.espnId) return espnHeadshotFromId(entry.espnId);
 
-          const batchSize = 6;
-          for (let i = 0; i < teams.length; i += batchSize) {
-            const batch = teams.slice(i, i + batchSize);
-            await Promise.all(
-              batch.map(async (team) => {
-                try {
-                  const data = await fetchJsonWithTimeout(ESPN_ROSTER_URL(team.id), 5500);
-                  if (Array.isArray(data?.athletes)) {
-                    for (const entry of data.athletes) {
-                      const list = Array.isArray(entry?.items) ? entry.items : [entry];
-                      for (const a of list) {
-                        const fullName = (a?.displayName || a?.fullName || '').trim();
-                        if (fullName) nameSet.add(fullName);
-                      }
-                    }
-                  }
-                } catch (_) {}
-              })
-            );
+      const norm = normalizeName(entry.player);
+      if (imposterState.headshotCache.has(norm)) {
+        return imposterState.headshotCache.get(norm);
+      }
+
+      // Query ESPN Common Search API to find the athlete's ESPN ID & headshot
+      try {
+        const searchUrl = `https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(entry.player)}&limit=5&type=player&sport=basketball&league=nba`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4500);
+        const res = await fetch(searchUrl, { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data?.items) ? data.items : [];
+          const exact = items.find(i => normalizeName(i.displayName) === norm) || items[0];
+          const url = exact?.headshot?.href || (exact?.id ? espnHeadshotFromId(exact.id) : '');
+          if (url) {
+            imposterState.headshotCache.set(norm, url);
+            return url;
           }
-        } catch (_) {}
-
-        // Backup 1: ESPN Core V3 Active Athletes
-        if (nameSet.size < 20) {
-          try {
-            const coreData = await fetchJsonWithTimeout(ESPN_CORE_ATHLETES_URL, 6000);
-            const items = Array.isArray(coreData?.items) ? coreData.items : [];
-            for (const item of items) {
-              if (item && item.active === true) {
-                const fullName = (item.displayName || item.fullName || '').trim();
-                if (fullName) nameSet.add(fullName);
-              }
-            }
-          } catch (_) {}
         }
+      } catch (_) {}
 
-        // Backup 2: Wikipedia Current NBA Players
-        if (nameSet.size < 20) {
-          try {
-            const wikiData = await fetchJsonWithTimeout(WIKI_BASE_API, 5500);
-            const pages = Object.values(wikiData?.query?.pages || {});
-            for (const p of pages) {
-              if (p?.title && !p.title.startsWith('Category:')) {
-                const clean = p.title.replace(/\s*\(.*?\)\s*/g, '').trim();
-                if (clean) nameSet.add(clean);
-              }
-            }
-          } catch (_) {}
-        }
-
-        imposterState.currentPlayers = Array.from(nameSet);
-        return imposterState.currentPlayers;
-      })();
-
-      return imposterState.currentFetchPromise;
+      return '';
     }
 
     /**
@@ -472,26 +549,40 @@
 
       imposterState.totalPlayers = Math.min(8, Math.max(3, parseInt(countSelect.value, 10) || 4));
 
+      startBtn.disabled = true;
+      startBtn.classList.add('opacity-60');
+      statusMsg.classList.remove('hidden');
+
       let pool = [];
       if (imposterState.poolMode === 'current') {
-        if (imposterState.currentPlayers.length === 0) {
-          startBtn.disabled = true;
-          startBtn.classList.add('opacity-60');
-          statusMsg.classList.remove('hidden');
-          await loadCurrentNbaDatabase();
-          startBtn.disabled = false;
-          startBtn.classList.remove('opacity-60');
-          statusMsg.classList.add('hidden');
-        }
-        pool = imposterState.currentPlayers.length > 0 ? imposterState.currentPlayers : ALL_TIME_LEGENDS;
+        await loadCurrentJsonList();
+        pool = imposterState.currentJsonList.length > 0
+          ? imposterState.currentJsonList
+          : DEFAULT_CURRENT_PLAYERS;
       } else {
         pool = ALL_TIME_LEGENDS;
       }
 
-      // Pick 1 random player and 1 random imposter among the N players
-      imposterState.selectedNbaPlayer = pool[Math.floor(Math.random() * pool.length)];
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      const headshotUrl = await resolvePlayerHeadshot(chosen);
+
+      // Preload image into browser cache before first reveal
+      if (headshotUrl) {
+        const pre = new Image();
+        pre.src = headshotUrl;
+      }
+
+      imposterState.selectedEntry = {
+        player: chosen.player,
+        hint: chosen.hint || '',
+        headshotUrl
+      };
       imposterState.imposterIndex = Math.floor(Math.random() * imposterState.totalPlayers);
       imposterState.turnIndex = 0;
+
+      startBtn.disabled = false;
+      startBtn.classList.remove('opacity-60');
+      statusMsg.classList.add('hidden');
 
       document.getElementById('deal-pool-badge').textContent =
         imposterState.poolMode === 'current' ? 'Current NBA' : 'All-Time Legends';
@@ -519,10 +610,12 @@
 
       const cardBtn = document.getElementById('secret-card-btn');
       cardBtn.className =
-        'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+        'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
 
       document.getElementById('card-hidden-face').classList.remove('hidden');
       document.getElementById('card-revealed-face').classList.add('hidden');
+      document.getElementById('card-headshot-wrap').classList.add('hidden');
+      document.getElementById('card-hint-badge').classList.add('hidden');
       document.getElementById('card-reveal-value').textContent = '--';
 
       const nextBtn = document.getElementById('next-player-turn-btn');
@@ -543,8 +636,13 @@
       const cardBtn = document.getElementById('secret-card-btn');
       const hiddenFace = document.getElementById('card-hidden-face');
       const revealedFace = document.getElementById('card-revealed-face');
+      const headshotWrap = document.getElementById('card-headshot-wrap');
+      const headshotImg = document.getElementById('card-headshot-img');
+      const headshotFallback = document.getElementById('card-headshot-fallback');
       const roleLabel = document.getElementById('card-role-label');
       const revealValue = document.getElementById('card-reveal-value');
+      const hintBadge = document.getElementById('card-hint-badge');
+      const hintText = document.getElementById('card-hint-text');
 
       if (imposterState.isRevealed) {
         imposterState.hasViewedThisTurn = true;
@@ -554,18 +652,58 @@
         const isImposter = imposterState.turnIndex === imposterState.imposterIndex;
         if (isImposter) {
           cardBtn.className =
-            'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-red-950/30 border-2 border-red-500/70 p-6 flex flex-col items-center justify-center shadow-xl shadow-red-950/30 transition-all duration-200 select-none mb-6';
+            'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-red-950/30 border-2 border-red-500/70 p-6 flex flex-col items-center justify-center shadow-xl shadow-red-950/30 transition-all duration-200 select-none mb-6';
+          headshotWrap.classList.add('hidden');
+          hintBadge.classList.add('hidden');
           roleLabel.textContent = 'Your Secret Role';
           roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-red-400/80 mb-2';
           revealValue.textContent = 'IMPOSTER';
           revealValue.className = 'text-3xl sm:text-4xl font-black tracking-wider text-red-500';
         } else {
+          const { player, hint, headshotUrl } = imposterState.selectedEntry;
+
           cardBtn.className =
-            'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-emerald-500/60 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+            'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-zinc-950 border-2 border-emerald-500/60 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+
+          // Show headshot (or clean initials fallback if unavailable)
+          headshotWrap.classList.remove('hidden');
+          const initials = player
+            .split(' ')
+            .map(part => part[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
+
+          if (headshotUrl) {
+            headshotImg.src = headshotUrl;
+            headshotImg.alt = player;
+            headshotImg.classList.remove('hidden');
+            headshotFallback.classList.add('hidden');
+            headshotFallback.classList.remove('flex');
+            headshotImg.onerror = () => {
+              headshotImg.classList.add('hidden');
+              headshotFallback.textContent = initials;
+              headshotFallback.classList.remove('hidden');
+              headshotFallback.classList.add('flex');
+            };
+          } else {
+            headshotImg.classList.add('hidden');
+            headshotFallback.textContent = initials;
+            headshotFallback.classList.remove('hidden');
+            headshotFallback.classList.add('flex');
+          }
+
           roleLabel.textContent = 'Your NBA Player';
-          roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-emerald-400/80 mb-2';
-          revealValue.textContent = imposterState.selectedNbaPlayer;
+          roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-emerald-400/80 mb-1.5';
+          revealValue.textContent = player;
           revealValue.className = 'text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug';
+
+          if (hint) {
+            hintText.textContent = hint;
+            hintBadge.classList.remove('hidden');
+          } else {
+            hintBadge.classList.add('hidden');
+          }
         }
 
         const nextBtn = document.getElementById('next-player-turn-btn');
@@ -574,9 +712,11 @@
           'w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-zinc-200 text-zinc-950 font-extrabold rounded-xl transition flex items-center justify-center gap-2 mx-auto shadow-lg';
       } else {
         cardBtn.className =
-          'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+          'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
         hiddenFace.classList.remove('hidden');
         revealedFace.classList.add('hidden');
+        headshotWrap.classList.add('hidden');
+        hintBadge.classList.add('hidden');
         revealValue.textContent = '--';
       }
     }
@@ -587,7 +727,6 @@
     function advanceToNextPlayer() {
       if (!imposterState.hasViewedThisTurn) return;
 
-      // Immediately clear revealed text before transitioning
       document.getElementById('card-reveal-value').textContent = '--';
       document.getElementById('card-revealed-face').classList.add('hidden');
       document.getElementById('card-hidden-face').classList.remove('hidden');
@@ -607,15 +746,15 @@
     function resetToImposterHome() {
       imposterState.isRevealed = false;
       imposterState.hasViewedThisTurn = false;
-      imposterState.selectedNbaPlayer = '';
+      imposterState.selectedEntry = { player: '', hint: '', headshotUrl: '' };
 
       document.getElementById('imposter-start-screen').classList.add('hidden');
       document.getElementById('imposter-deal-screen').classList.add('hidden');
       document.getElementById('imposter-home-screen').classList.remove('hidden');
     }
 
-    // Pre-fetch live Current NBA roster in the background on load
-    loadCurrentNbaDatabase();
+    // Preload your editable current-players.json on page load
+    loadCurrentJsonList();
   </script>
 </body>
 </html>
