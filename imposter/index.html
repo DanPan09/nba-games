@@ -650,23 +650,33 @@
         revealedFace.classList.remove('hidden');
 
         const isImposter = imposterState.turnIndex === imposterState.imposterIndex;
+        const { player, hint, headshotUrl } = imposterState.selectedEntry;
+
         if (isImposter) {
           cardBtn.className =
             'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-red-950/30 border-2 border-red-500/70 p-6 flex flex-col items-center justify-center shadow-xl shadow-red-950/30 transition-all duration-200 select-none mb-6';
           headshotWrap.classList.add('hidden');
-          hintBadge.classList.add('hidden');
           roleLabel.textContent = 'Your Secret Role';
           roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-red-400/80 mb-2';
           revealValue.textContent = 'IMPOSTER';
           revealValue.className = 'text-3xl sm:text-4xl font-black tracking-wider text-red-500';
-        } else {
-          const { player, hint, headshotUrl } = imposterState.selectedEntry;
 
+          // Give the Imposter the corresponding 1-word hint from the JSON list
+          if (hint) {
+            hintText.textContent = hint;
+            hintBadge.className = 'mt-3 px-3.5 py-1.5 rounded-full bg-red-500/15 border border-red-500/40 text-xs font-extrabold text-red-300 tracking-wide';
+            hintBadge.classList.remove('hidden');
+          } else {
+            hintBadge.classList.add('hidden');
+          }
+        } else {
           cardBtn.className =
             'w-full max-w-sm mx-auto min-h-[250px] rounded-2xl bg-zinc-950 border-2 border-emerald-500/60 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
 
-          // Show headshot (or clean initials fallback if unavailable)
+          // Hide hint for regular players; show headshot + player name only
+          hintBadge.classList.add('hidden');
           headshotWrap.classList.remove('hidden');
+
           const initials = player
             .split(' ')
             .map(part => part[0])
@@ -697,13 +707,6 @@
           roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-emerald-400/80 mb-1.5';
           revealValue.textContent = player;
           revealValue.className = 'text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug';
-
-          if (hint) {
-            hintText.textContent = hint;
-            hintBadge.classList.remove('hidden');
-          } else {
-            hintBadge.classList.add('hidden');
-          }
         }
 
         const nextBtn = document.getElementById('next-player-turn-btn');
