@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ball Knowledge Central | NBA Imposter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top, #18181b 0%, #09090b 100%) !important;
+      color: #f4f4f5 !important;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    .court-bg {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.14) 0%, transparent 60%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .app-body-row { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    @media (min-width: 768px) {
+      .app-body-row { flex-direction: row; }
+      .app-sidebar {
+        width: 15rem;
+        min-height: calc(100vh - 57px);
+        border-right: 1px solid rgba(39, 39, 42, 0.85);
+        border-bottom: none;
+        flex-direction: column;
+      }
+    }
+    .app-sidebar {
+      background: rgba(9, 9, 11, 0.92);
+      border-bottom: 1px solid rgba(39, 39, 42, 0.85);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-pop {
+      animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    button, select { cursor: pointer; }
+  </style>
+</head>
+<body class="court-bg app-shell flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
+
+  <!-- Full-Width Top Header -->
+  <header class="w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="w-full px-4 py-3.5 flex items-center justify-center">
+      <div class="flex items-center justify-center text-center">
+        <h1 class="text-lg sm:text-xl font-black tracking-tight text-white leading-none">Ball Knowledge Central</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Below-Header Row: Left Sidebar + Main Workspace -->
+  <div class="app-body-row flex-1 flex flex-col md:flex-row min-w-0">
+
+    <!-- Left Sidebar Navigation (Uniform across Home, EBK, and Imposter) -->
+    <aside class="app-sidebar w-full md:w-60 bg-zinc-950/90 border-b md:border-b-0 md:border-r border-zinc-800/80 backdrop-blur-md flex flex-row md:flex-col justify-between px-4 py-3 md:p-4 shrink-0 z-30">
+      <nav aria-label="Game Switcher" class="flex flex-row md:flex-col gap-1.5 flex-1 md:flex-initial">
+
+        <!-- Home Tab -->
+        <a
+          href="../"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent hover:bg-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white font-bold text-sm transition-all"
+        >
+          <span class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
+            </svg>
+          </span>
+          <span class="tracking-wide">Home</span>
+        </a>
+
+        <!-- EBK Tab -->
+        <a
+          href="../ebk/"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent hover:bg-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white font-bold text-sm transition-all"
+        >
+          <span class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M6.5 6.5c3.5 3.5 3.5 7.5 0 11"></path>
+              <path d="M17.5 6.5c-3.5 3.5-3.5 7.5 0 11"></path>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+            </svg>
+          </span>
+          <span class="tracking-wide">EBK</span>
+        </a>
+
+        <!-- Active Tab: Imposter -->
+        <a
+          href="./"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/40 text-white font-bold text-sm shadow-sm transition-all"
+        >
+          <span class="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0 shadow shadow-orange-500/30">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 005 16h14a1 1 0 00.707-1.707L18 12.586V9a6 6 0 00-6-6z" />
+              <circle cx="9.5" cy="10" r="1" fill="currentColor" />
+              <circle cx="14.5" cy="10" r="1" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="tracking-wide">Imposter</span>
+          <span class="ml-auto hidden md:inline-block w-2 h-2 rounded-full bg-orange-400"></span>
+        </a>
+
+      </nav>
+    </aside>
+
+    <!-- Main Workspace Column -->
+    <div class="flex-1 flex flex-col justify-between min-w-0">
+      <main class="flex-1 w-full max-w-xl mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center">
+
+        <!-- ===============================================================
+             SCREEN 1: IMPOSTER START MENU
+             =============================================================== -->
+        <div id="imposter-home-screen" class="w-full bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
+          <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-orange-500/15 border border-orange-500/30 text-orange-400 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 005 16h14a1 1 0 00.707-1.707L18 12.586V9a6 6 0 00-6-6z" />
+              <circle cx="9.5" cy="10" r="1" fill="currentColor" />
+              <circle cx="14.5" cy="10" r="1" fill="currentColor" />
+            </svg>
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">NBA Imposter</h2>
+          <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
+            Everyone gets the same NBA player except one hidden Imposter. Pass the device around so each player can view their secret card.
+          </p>
+
+          <!-- Current vs Legends Toggle -->
+          <div class="max-w-xs mx-auto mb-5">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+              Player Pool
+            </label>
+            <div class="grid grid-cols-2 p-1 bg-zinc-950 border border-zinc-800 rounded-xl">
+              <button
+                type="button"
+                id="pool-current-btn"
+                onclick="selectPoolMode('current')"
+                class="py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg bg-orange-600 text-white shadow transition"
+              >
+                Current
+              </button>
+              <button
+                type="button"
+                id="pool-legends-btn"
+                onclick="selectPoolMode('legends')"
+                class="py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg text-zinc-400 hover:text-white transition"
+              >
+                Legends
+              </button>
+            </div>
+          </div>
+
+          <!-- Number of Players Dropdown (3-8) -->
+          <div class="max-w-xs mx-auto mb-6 text-left">
+            <label for="player-count-select" class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2 text-center">
+              Number of Players
+            </label>
+            <div class="relative">
+              <select
+                id="player-count-select"
+                class="w-full appearance-none bg-zinc-950 border border-zinc-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl px-4 py-3 text-white text-sm font-bold outline-none transition"
+              >
+                <option value="3">3 Players</option>
+                <option value="4" selected>4 Players</option>
+                <option value="5">5 Players</option>
+                <option value="6">6 Players</option>
+                <option value="7">7 Players</option>
+                <option value="8">8 Players</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-zinc-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status message while Current roster loads if needed -->
+          <p id="start-status-msg" class="hidden text-xs font-semibold text-amber-400 mb-4">
+            Loading live NBA roster...
+          </p>
+
+          <button
+            type="button"
+            id="start-imposter-btn"
+            onclick="startImposterGame()"
+            class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 active:scale-[0.99] text-white font-black text-base rounded-2xl shadow-xl shadow-orange-600/25 transition flex items-center justify-center gap-2.5 mx-auto"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+            <span>Start Game</span>
+          </button>
+        </div>
+
+        <!-- ===============================================================
+             SCREEN 2: PASS-AND-PLAY VIRTUAL CARD REVEAL
+             =============================================================== -->
+        <div id="imposter-deal-screen" class="hidden w-full bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
+          <div class="flex items-center justify-between text-xs font-bold text-zinc-400 mb-5">
+            <span id="deal-pool-badge" class="px-2.5 py-1 rounded-full bg-zinc-800/90 border border-zinc-700/60 text-zinc-300">
+              Current NBA
+            </span>
+            <span id="deal-player-counter" class="text-orange-400 font-extrabold uppercase tracking-wider">
+              Player 1 of 4
+            </span>
+          </div>
+
+          <h2 id="deal-heading" class="text-xl sm:text-2xl font-black text-white tracking-tight mb-1">
+            Player 1's Turn
+          </h2>
+          <p id="deal-subheading" class="text-xs sm:text-sm text-zinc-400 mb-6">
+            Tap your card below to reveal your secret identity.
+          </p>
+
+          <!-- Interactive Secret Virtual Card -->
+          <button
+            type="button"
+            id="secret-card-btn"
+            onclick="toggleCardReveal()"
+            class="w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6"
+          >
+            <!-- Face-Down State -->
+            <div id="card-hidden-face" class="flex flex-col items-center justify-center">
+              <div class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 text-orange-400 flex items-center justify-center mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <span class="text-sm font-extrabold text-white tracking-wide">Tap to Reveal Card</span>
+              <span class="text-[11px] text-zinc-500 mt-1">Make sure no one else is looking</span>
+            </div>
+
+            <!-- Face-Up Revealed State -->
+            <div id="card-revealed-face" class="hidden flex flex-col items-center justify-center">
+              <span id="card-role-label" class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-2">
+                Your NBA Player
+              </span>
+              <div id="card-reveal-value" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug">
+                --
+              </div>
+              <span id="card-tap-hide-hint" class="text-[11px] text-zinc-500 mt-3">
+                Tap card to hide again
+              </span>
+            </div>
+          </button>
+
+          <!-- Next Player Button (Unlocked once card has been viewed) -->
+          <button
+            type="button"
+            id="next-player-turn-btn"
+            onclick="advanceToNextPlayer()"
+            disabled
+            class="w-full sm:w-auto px-7 py-3.5 bg-zinc-800 text-zinc-500 font-extrabold rounded-xl transition flex items-center justify-center gap-2 mx-auto cursor-not-allowed"
+          >
+            <span id="next-player-btn-text">Next Player</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- ===============================================================
+             SCREEN 3: FINAL START! SCREEN
+             =============================================================== -->
+        <div id="imposter-start-screen" class="hidden w-full bg-zinc-900/95 border border-zinc-800 rounded-3xl p-8 sm:p-12 text-center shadow-2xl animate-pop">
+          <h2 class="text-5xl sm:text-6xl font-black text-white tracking-tight mb-3">
+            Start!
+          </h2>
+          <p class="text-base sm:text-lg font-bold text-orange-400 uppercase tracking-widest mb-8">
+            Find the imposter
+          </p>
+
+          <button
+            type="button"
+            onclick="resetToImposterHome()"
+            class="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-500 active:scale-[0.99] text-white font-black text-base rounded-2xl shadow-xl shadow-orange-600/25 transition mx-auto"
+          >
+            Back to Imposter Home
+          </button>
+        </div>
+
+      </main>
+
+      <!-- Footer -->
+      <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
+        <span>NBA Imposter • Pass &amp; Play Party Mode</span>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * All-Time NBA Legends Database
+     */
+    const ALL_TIME_LEGENDS = [
+      'Michael Jordan', 'Kobe Bryant', 'Magic Johnson', 'Larry Bird', 'Kareem Abdul-Jabbar',
+      'Shaquille O\'Neal', 'Tim Duncan', 'Hakeem Olajuwon', 'Allen Iverson', 'Dirk Nowitzki',
+      'Dwyane Wade', 'Kevin Garnett', 'Charles Barkley', 'Karl Malone', 'John Stockton',
+      'Scottie Pippen', 'Dennis Rodman', 'Wilt Chamberlain', 'Bill Russell', 'Oscar Robertson',
+      'Jerry West', 'Elgin Baylor', 'Julius Erving', 'Moses Malone', 'Isiah Thomas',
+      'Clyde Drexler', 'Patrick Ewing', 'David Robinson', 'Reggie Miller', 'Gary Payton',
+      'Jason Kidd', 'Steve Nash', 'Tracy McGrady', 'Vince Carter', 'Ray Allen',
+      'Paul Pierce', 'Carmelo Anthony', 'Dwight Howard', 'Derrick Rose', 'Blake Griffin',
+      'Rajon Rondo', 'Manu Ginobili', 'Tony Parker', 'Pau Gasol', 'Yao Ming',
+      'Chris Bosh', 'Amar\'e Stoudemire', 'Chauncey Billups', 'Ben Wallace', 'Rasheed Wallace',
+      'Grant Hill', 'Penny Hardaway', 'Chris Webber', 'Peja Stojakovic', 'Gilbert Arenas',
+      'Baron Davis', 'Andre Iguodala', 'Metta World Peace', 'Lamar Odom', 'Jamal Crawford',
+      'Joakim Noah', 'Marc Gasol', 'Zach Randolph', 'Tony Allen', 'LaMarcus Aldridge',
+      'Brandon Roy', 'Shawn Kemp', 'Alonzo Mourning', 'Tim Hardaway', 'Mitch Richmond',
+      'Chris Mullin', 'Dikembe Mutombo', 'Dominique Wilkins', 'George Gervin', 'Pete Maravich',
+      'Rick Barry', 'Bill Walton', 'Willis Reed', 'Walt Frazier', 'Bob Cousy',
+      'John Havlicek', 'Kevin McHale', 'Robert Parish', 'James Worthy', 'Bob McAdoo',
+      'Dennis Johnson', 'Joe Dumars', 'Alex English', 'Adrian Dantley', 'Sidney Moncrief',
+      'Mark Price', 'Brad Daugherty', 'Larry Nance', 'Detlef Schrempf', 'Kevin Johnson',
+      'Stephon Marbury', 'Steve Francis', 'Jermaine O\'Neal', 'Michael Redd', 'Jason Terry',
+      'Shawn Marion', 'Tyson Chandler', 'Deron Williams', 'Carlos Boozer', 'Andrei Kirilenko'
+    ];
+
+    /**
+     * Game State
+     */
+    const imposterState = {
+      poolMode: 'current',      // 'current' | 'legends'
+      currentPlayers: [],       // Live active NBA players fetched from ESPN/Wikipedia
+      currentFetchPromise: null,
+      totalPlayers: 4,
+      selectedNbaPlayer: '',
+      imposterIndex: 0,
+      turnIndex: 0,
+      isRevealed: false,
+      hasViewedThisTurn: false
+    };
+
+    const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
+    const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster`;
+    const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
+    const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=250&format=json&origin=*';
+
+    async function fetchJsonWithTimeout(url, timeoutMs = 5500) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal, mode: 'cors', credentials: 'omit' });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        clearTimeout(timer);
+        throw err;
+      }
+    }
+
+    /**
+     * Load live Current NBA Players from ESPN (with Core V3 & Wikipedia fallbacks)
+     */
+    async function loadCurrentNbaDatabase() {
+      if (imposterState.currentPlayers.length > 0) return imposterState.currentPlayers;
+      if (imposterState.currentFetchPromise) return imposterState.currentFetchPromise;
+
+      imposterState.currentFetchPromise = (async () => {
+        const nameSet = new Set();
+
+        // Primary: ESPN 30-Team Rosters
+        try {
+          const teamsData = await fetchJsonWithTimeout(ESPN_TEAMS_URL, 5500);
+          const rawTeams = teamsData?.sports?.[0]?.leagues?.[0]?.teams || [];
+          const teams = rawTeams.map(t => t.team || t).filter(t => t && t.id);
+
+          const batchSize = 6;
+          for (let i = 0; i < teams.length; i += batchSize) {
+            const batch = teams.slice(i, i + batchSize);
+            await Promise.all(
+              batch.map(async (team) => {
+                try {
+                  const data = await fetchJsonWithTimeout(ESPN_ROSTER_URL(team.id), 5500);
+                  if (Array.isArray(data?.athletes)) {
+                    for (const entry of data.athletes) {
+                      const list = Array.isArray(entry?.items) ? entry.items : [entry];
+                      for (const a of list) {
+                        const fullName = (a?.displayName || a?.fullName || '').trim();
+                        if (fullName) nameSet.add(fullName);
+                      }
+                    }
+                  }
+                } catch (_) {}
+              })
+            );
+          }
+        } catch (_) {}
+
+        // Backup 1: ESPN Core V3 Active Athletes
+        if (nameSet.size < 20) {
+          try {
+            const coreData = await fetchJsonWithTimeout(ESPN_CORE_ATHLETES_URL, 6000);
+            const items = Array.isArray(coreData?.items) ? coreData.items : [];
+            for (const item of items) {
+              if (item && item.active === true) {
+                const fullName = (item.displayName || item.fullName || '').trim();
+                if (fullName) nameSet.add(fullName);
+              }
+            }
+          } catch (_) {}
+        }
+
+        // Backup 2: Wikipedia Current NBA Players
+        if (nameSet.size < 20) {
+          try {
+            const wikiData = await fetchJsonWithTimeout(WIKI_BASE_API, 5500);
+            const pages = Object.values(wikiData?.query?.pages || {});
+            for (const p of pages) {
+              if (p?.title && !p.title.startsWith('Category:')) {
+                const clean = p.title.replace(/\s*\(.*?\)\s*/g, '').trim();
+                if (clean) nameSet.add(clean);
+              }
+            }
+          } catch (_) {}
+        }
+
+        imposterState.currentPlayers = Array.from(nameSet);
+        return imposterState.currentPlayers;
+      })();
+
+      return imposterState.currentFetchPromise;
+    }
+
+    /**
+     * Toggle between Current and Legends on the Start Menu
+     */
+    function selectPoolMode(mode) {
+      imposterState.poolMode = mode;
+      const currentBtn = document.getElementById('pool-current-btn');
+      const legendsBtn = document.getElementById('pool-legends-btn');
+
+      if (mode === 'current') {
+        currentBtn.className = 'py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg bg-orange-600 text-white shadow transition';
+        legendsBtn.className = 'py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg text-zinc-400 hover:text-white transition';
+      } else {
+        legendsBtn.className = 'py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg bg-orange-600 text-white shadow transition';
+        currentBtn.className = 'py-2.5 px-4 text-xs sm:text-sm font-extrabold rounded-lg text-zinc-400 hover:text-white transition';
+      }
+    }
+
+    /**
+     * Start the Imposter Game
+     */
+    async function startImposterGame() {
+      const startBtn = document.getElementById('start-imposter-btn');
+      const statusMsg = document.getElementById('start-status-msg');
+      const countSelect = document.getElementById('player-count-select');
+
+      imposterState.totalPlayers = Math.min(8, Math.max(3, parseInt(countSelect.value, 10) || 4));
+
+      let pool = [];
+      if (imposterState.poolMode === 'current') {
+        if (imposterState.currentPlayers.length === 0) {
+          startBtn.disabled = true;
+          startBtn.classList.add('opacity-60');
+          statusMsg.classList.remove('hidden');
+          await loadCurrentNbaDatabase();
+          startBtn.disabled = false;
+          startBtn.classList.remove('opacity-60');
+          statusMsg.classList.add('hidden');
+        }
+        pool = imposterState.currentPlayers.length > 0 ? imposterState.currentPlayers : ALL_TIME_LEGENDS;
+      } else {
+        pool = ALL_TIME_LEGENDS;
+      }
+
+      // Pick 1 random player and 1 random imposter among the N players
+      imposterState.selectedNbaPlayer = pool[Math.floor(Math.random() * pool.length)];
+      imposterState.imposterIndex = Math.floor(Math.random() * imposterState.totalPlayers);
+      imposterState.turnIndex = 0;
+
+      document.getElementById('deal-pool-badge').textContent =
+        imposterState.poolMode === 'current' ? 'Current NBA' : 'All-Time Legends';
+
+      document.getElementById('imposter-home-screen').classList.add('hidden');
+      document.getElementById('imposter-start-screen').classList.add('hidden');
+      document.getElementById('imposter-deal-screen').classList.remove('hidden');
+
+      renderCurrentTurnCard();
+    }
+
+    /**
+     * Render Face-Down Card for the current player's turn
+     */
+    function renderCurrentTurnCard() {
+      imposterState.isRevealed = false;
+      imposterState.hasViewedThisTurn = false;
+
+      const playerNum = imposterState.turnIndex + 1;
+      const total = imposterState.totalPlayers;
+
+      document.getElementById('deal-player-counter').textContent = `Player ${playerNum} of ${total}`;
+      document.getElementById('deal-heading').textContent = `Player ${playerNum}'s Turn`;
+      document.getElementById('deal-subheading').textContent = 'Tap your card below to reveal your secret identity.';
+
+      const cardBtn = document.getElementById('secret-card-btn');
+      cardBtn.className =
+        'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+
+      document.getElementById('card-hidden-face').classList.remove('hidden');
+      document.getElementById('card-revealed-face').classList.add('hidden');
+      document.getElementById('card-reveal-value').textContent = '--';
+
+      const nextBtn = document.getElementById('next-player-turn-btn');
+      nextBtn.disabled = true;
+      nextBtn.className =
+        'w-full sm:w-auto px-7 py-3.5 bg-zinc-800 text-zinc-500 font-extrabold rounded-xl transition flex items-center justify-center gap-2 mx-auto cursor-not-allowed';
+
+      document.getElementById('next-player-btn-text').textContent =
+        playerNum === total ? 'Continue to Start' : 'Next Player';
+    }
+
+    /**
+     * Toggle Card Reveal / Hide when clicked
+     */
+    function toggleCardReveal() {
+      imposterState.isRevealed = !imposterState.isRevealed;
+
+      const cardBtn = document.getElementById('secret-card-btn');
+      const hiddenFace = document.getElementById('card-hidden-face');
+      const revealedFace = document.getElementById('card-revealed-face');
+      const roleLabel = document.getElementById('card-role-label');
+      const revealValue = document.getElementById('card-reveal-value');
+
+      if (imposterState.isRevealed) {
+        imposterState.hasViewedThisTurn = true;
+        hiddenFace.classList.add('hidden');
+        revealedFace.classList.remove('hidden');
+
+        const isImposter = imposterState.turnIndex === imposterState.imposterIndex;
+        if (isImposter) {
+          cardBtn.className =
+            'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-red-950/30 border-2 border-red-500/70 p-6 flex flex-col items-center justify-center shadow-xl shadow-red-950/30 transition-all duration-200 select-none mb-6';
+          roleLabel.textContent = 'Your Secret Role';
+          roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-red-400/80 mb-2';
+          revealValue.textContent = 'IMPOSTER';
+          revealValue.className = 'text-3xl sm:text-4xl font-black tracking-wider text-red-500';
+        } else {
+          cardBtn.className =
+            'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-emerald-500/60 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+          roleLabel.textContent = 'Your NBA Player';
+          roleLabel.className = 'text-[10px] font-extrabold uppercase tracking-widest text-emerald-400/80 mb-2';
+          revealValue.textContent = imposterState.selectedNbaPlayer;
+          revealValue.className = 'text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug';
+        }
+
+        const nextBtn = document.getElementById('next-player-turn-btn');
+        nextBtn.disabled = false;
+        nextBtn.className =
+          'w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-zinc-200 text-zinc-950 font-extrabold rounded-xl transition flex items-center justify-center gap-2 mx-auto shadow-lg';
+      } else {
+        cardBtn.className =
+          'w-full max-w-sm mx-auto min-h-[210px] rounded-2xl bg-zinc-950 border-2 border-zinc-700 hover:border-orange-500/70 p-6 flex flex-col items-center justify-center shadow-xl transition-all duration-200 select-none mb-6';
+        hiddenFace.classList.remove('hidden');
+        revealedFace.classList.add('hidden');
+        revealValue.textContent = '--';
+      }
+    }
+
+    /**
+     * Advance to the next player, or enter the Start! screen after the last player
+     */
+    function advanceToNextPlayer() {
+      if (!imposterState.hasViewedThisTurn) return;
+
+      // Immediately clear revealed text before transitioning
+      document.getElementById('card-reveal-value').textContent = '--';
+      document.getElementById('card-revealed-face').classList.add('hidden');
+      document.getElementById('card-hidden-face').classList.remove('hidden');
+
+      if (imposterState.turnIndex + 1 < imposterState.totalPlayers) {
+        imposterState.turnIndex++;
+        renderCurrentTurnCard();
+      } else {
+        document.getElementById('imposter-deal-screen').classList.add('hidden');
+        document.getElementById('imposter-start-screen').classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Return from the Start! screen back to the Imposter start menu
+     */
+    function resetToImposterHome() {
+      imposterState.isRevealed = false;
+      imposterState.hasViewedThisTurn = false;
+      imposterState.selectedNbaPlayer = '';
+
+      document.getElementById('imposter-start-screen').classList.add('hidden');
+      document.getElementById('imposter-deal-screen').classList.add('hidden');
+      document.getElementById('imposter-home-screen').classList.remove('hidden');
+    }
+
+    // Pre-fetch live Current NBA roster in the background on load
+    loadCurrentNbaDatabase();
+  </script>
+</body>
+</html>
