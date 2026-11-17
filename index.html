@@ -93,14 +93,25 @@
     <aside class="app-sidebar w-full md:w-60 bg-zinc-950/90 border-b md:border-b-0 md:border-r border-zinc-800/80 backdrop-blur-md flex flex-row md:flex-col justify-between px-4 py-3 md:p-4 shrink-0 z-30">
       <nav aria-label="Game Switcher" class="flex flex-row md:flex-col gap-1.5 flex-1 md:flex-initial">
         <div class="hidden md:block px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
-          Games
+          Navigation
         </div>
 
-        <!-- Active Tab: EBK -->
-        <button
-          type="button"
-          id="sidebar-tab-ebk"
-          onclick="selectSidebarGame('ebk')"
+        <!-- Home Tab (Goes up one folder to root index.html) -->
+        <a
+          href="../"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent hover:bg-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white font-bold text-sm transition-all"
+        >
+          <span class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
+            </svg>
+          </span>
+          <span class="tracking-wide">Home</span>
+        </a>
+
+        <!-- Active Tab: EBK (Current /ebk/ folder) -->
+        <a
+          href="./"
           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/40 text-white font-bold text-sm shadow-sm transition-all"
         >
           <span class="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0 shadow shadow-orange-500/30">
@@ -113,13 +124,7 @@
           </span>
           <span class="tracking-wide">EBK</span>
           <span class="ml-auto hidden md:inline-block w-2 h-2 rounded-full bg-orange-400"></span>
-        </button>
-
-        <!-- Placeholder slot hint for future games -->
-        <div class="hidden md:flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-dashed border-zinc-800/80 text-zinc-600 text-xs font-medium select-none">
-          <span class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">+</span>
-          <span>More games soon</span>
-        </div>
+        </a>
       </nav>
 
       <!-- Sidebar Footer Info (Desktop) -->
