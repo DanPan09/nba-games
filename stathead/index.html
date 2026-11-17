@@ -478,8 +478,8 @@
     // errorMultiplier converts any stat error into Points-equivalent error
     const STAT_META = {
       Points:   { key: 'pts', abbr: 'PPG', label: 'Points Per Game',   errorMultiplier: 1 },
-      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 20 / 4 }, // 5.0x
-      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }  // 3.333...x
+      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 20 / 4 },
+      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }  
     };
 
     /**
@@ -1108,11 +1108,11 @@
       let points = 0;
       if (diff === 0 || eqDiff === 0) points = 100;
       else if (eqDiff <= 0.2) points = 80;
-      else if (eqDiff <= 0.4) points = 70;
-      else if (eqDiff <= 0.6) points = 60;
-      else if (eqDiff <= 0.8) points = 50;
-      else if (eqDiff <= 1.0) points = 40;
-      else if (eqDiff < 3.0) points = 20;
+      else if (eqDiff <= 0.5) points = 70;
+      else if (eqDiff <= 0.7) points = 60;
+      else if (eqDiff <= 1.0) points = 50;
+      else if (eqDiff <= 2.0) points = 40;
+      else if (eqDiff < 4.5) points = 20;
       else if (Math.abs(eqDiff - 3.0) < 1e-4) points = 10;
       else points = 0;
 
