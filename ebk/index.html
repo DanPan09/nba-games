@@ -681,11 +681,12 @@
     function rebuildDailySeedPool() {
       const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
       const qualifiedByMpg = validPlayers.filter(p => typeof p.mpg === 'number' && p.mpg > 10.0);
+      const sourcePool = qualifiedByMpg.length > 0 ? qualifiedByMpg : validPlayers;
 
       // Deduplicate by both canonical ID and normalized full name so no player ever appears twice
       const seenKeys = new Set();
       const uniqueQualified = [];
-      for (const p of qualifiedByMpg) {
+      for (const p of sourcePool) {
         const key = `${p.espnId || p.id}|${normalizeName(p.fullName)}`;
         if (!seenKeys.has(key)) {
           seenKeys.add(key);
@@ -1100,12 +1101,6 @@
         const footerEl = document.getElementById('footer-source-text');
         if (footerEl) {
           footerEl.textContent = `Live NBA roster, MPG & headshot data streamed dynamically via ${sourceLabel}.`;
-        }
-
-        const startNowBtn = document.getElementById('start-now-btn');
-        if (startNowBtn && state.dailySeedPool.length >= 6 && !state.gameStarted) {
-          startNowBtn.classList.remove('hidden');
-          startNowBtn.textContent = `Start Now (${state.dailySeedPool.length} >10 MPG players ready)`;
         }
       }
       return changed;
@@ -1654,7 +1649,6 @@
 
       const nameInput = document.getElementById('daily-player-name-input');
       const nameError = document.getElementById('daily-name-error');
-      const poolLoadingMsg = document.getElementById('daily-pool-loading-msg');
       const enteredName = nameInput ? nameInput.value.trim() : '';
 
       if (!enteredName) {
@@ -1672,11 +1666,7 @@
       if (nameInput) nameInput.classList.remove('border-red-500');
 
       rebuildDailySeedPool();
-      if (state.dailySeedPool.length === 0) {
-        if (poolLoadingMsg) poolLoadingMsg.classList.remove('hidden');
-        return;
-      }
-      if (poolLoadingMsg) poolLoadingMsg.classList.add('hidden');
+      if (state.dailySeedPool.length === 0) return;
 
       state.playerName = enteredName;
       safeSetStorage('ebk_player_name', enteredName);
