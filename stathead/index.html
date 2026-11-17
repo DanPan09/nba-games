@@ -534,21 +534,9 @@
     </div>
   </div>
 
-  <script>
+ <script>
     /**
      * Global Leaderboard Configuration (Supabase REST)
-     * SQL to create table in Supabase:
-     *
-     * create table if not exists public.stathead_daily_leaderboard (
-     *   id bigint generated always as identity primary key,
-     *   username text not null,
-     *   score integer not null,
-     *   daily_date text not null,
-     *   created_at timestamptz default now()
-     * );
-     * alter table public.stathead_daily_leaderboard enable row level security;
-     * create policy "Public read stathead" on public.stathead_daily_leaderboard for select using (true);
-     * create policy "Public insert stathead" on public.stathead_daily_leaderboard for insert with check (true);
      */
     const GLOBAL_LEADERBOARD_CONFIG = {
       supabaseUrl: 'https://kmxgnapxvlrjvzaiibii.supabase.co',
@@ -648,13 +636,12 @@
       usedInfiniteRandomIds: new Set()
     };
 
-    // Official ESPN Endpoints
+    // CORS-Verified ESPN Endpoints (site.api.espn.com & sports.core.api.espn.com)
     const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
-    const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster`;
+    const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?enable=stats`;
     const ESPN_DEPTHCHART_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/depthcharts`;
     const ESPN_SCOREBOARD_URL = (yyyymmdd) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${yyyymmdd}`;
-    const ESPN_BY_ATHLETE_URL = (page) => `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete?region=us&lang=en&contentorigin=espn&isqualified=false&page=${page}&limit=300&sort=offensive.avgPoints:desc`;
-    const ESPN_GAMELOG_URL = (athleteId) => `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/gamelog`;
+    const ESPN_CORE_EVENTLOG_URL = (athleteId) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/athletes/${athleteId}/eventlog?limit=100`;
 
     /**
      * EST (America/New_York) Date & Countdown Helpers
@@ -738,7 +725,7 @@
     }
 
     /**
-     * Fetch JSON with strict AbortController timeout
+     * Fetch JSON with strict AbortController timeout (no custom headers to avoid CORS preflight failures)
      */
     async function fetchJsonStrict(url, timeoutMs = 6500) {
       const controller = new AbortController();
@@ -747,8 +734,7 @@
         const res = await fetch(url, {
           signal: controller.signal,
           mode: 'cors',
-          credentials: 'omit',
-          headers: { 'Accept': 'application/json' }
+          credentials: 'omit'
         });
         clearTimeout(timer);
         if (!res.ok) {
@@ -762,6 +748,59 @@
         }
         throw new Error(err?.message || 'Network error');
       }
+    }
+
+    /**
+     * Force HTTPS on ESPN $ref URLs
+     */
+    function toHttps(url) {
+      return String(url || '').replace(/^http:\/\//i, 'https://');
+    }
+
+    /**
+     * Extract inline season averages from ESPN Roster object (used only when team has no game today)
+     */
+    function extractRosterInlineStats(athlete) {
+      const cats = athlete?.statistics?.splits?.categories || athlete?.statsSummary?.statistics || [];
+      if (!Array.isArray(cats) || cats.length === 0) return null;
+
+      const lookup = {};
+      for (const c of cats) {
+        const cKey = String(c?.name || c?.abbreviation || '').toLowerCase();
+        if (cKey && (c.value !== undefined || c.displayValue !== undefined)) {
+          lookup[cKey] = parseFloat(String(c.value ?? c.displayValue));
+        }
+        if (Array.isArray(c?.stats)) {
+          for (const s of c.stats) {
+            const sKey = String(s?.name || s?.abbreviation || '').toLowerCase();
+            if (sKey) {
+              lookup[sKey] = parseFloat(String(s.value ?? s.displayValue));
+            }
+          }
+        }
+      }
+
+      const gp = lookup.gamesplayed ?? lookup.gp ?? 0;
+      const gs = lookup.gamesstarted ?? lookup.gs ?? 0;
+      const pts = lookup.avgpoints ?? lookup.pts;
+      const reb = lookup.avgrebounds ?? lookup.reb;
+      const ast = lookup.avgassists ?? lookup.ast;
+      const stl = lookup.avgsteals ?? lookup.stl;
+      const blk = lookup.avgblocks ?? lookup.blk;
+
+      const hasAll = [pts, reb, ast, stl, blk].every(v => typeof v === 'number' && !Number.isNaN(v));
+      return {
+        gp: Number.isFinite(gp) ? gp : 0,
+        gs: Number.isFinite(gs) ? gs : 0,
+        stats: hasAll ? {
+          gp: gp || 1,
+          pts: Math.round(pts * 10) / 10,
+          reb: Math.round(reb * 10) / 10,
+          ast: Math.round(ast * 10) / 10,
+          stl: Math.round(stl * 10) / 10,
+          blk: Math.round(blk * 10) / 10
+        } : null
+      };
     }
 
     /**
@@ -785,13 +824,11 @@
             }
           }
         }
-      } catch (_) {
-        // Even if scoreboard times out, gamelog date filtering against state.todayDateKey still excludes today's games
-      }
+      } catch (_) {}
     }
 
     /**
-     * Step 2: Fetch ESPN League Stats + Team Rosters + Team Depth Charts (for Starters)
+     * Step 2: Fetch ESPN Teams, Rosters & Depth Charts via CORS-enabled site.api.espn.com
      */
     async function loadEspnPlayersAndStarters(sessionId) {
       const statusEl = document.getElementById('loading-status-text');
@@ -799,92 +836,32 @@
       await fetchTodayScoreboard();
       if (sessionId !== state.loadSessionId) return;
 
-      if (statusEl) statusEl.textContent = 'Loading ESPN NBA player statistics...';
+      if (statusEl) statusEl.textContent = 'Syncing ESPN NBA rosters & depth charts...';
 
-      // Fetch league-wide player stats (pages 1 & 2 cover all active NBA rotation/roster players)
-      const [page1, page2, teamsData] = await Promise.all([
-        fetchJsonStrict(ESPN_BY_ATHLETE_URL(1), 7000).catch(() => null),
-        fetchJsonStrict(ESPN_BY_ATHLETE_URL(2), 7000).catch(() => null),
-        fetchJsonStrict(ESPN_TEAMS_URL, 6500)
-      ]);
-
+      const teamsData = await fetchJsonStrict(ESPN_TEAMS_URL, 6500);
       if (sessionId !== state.loadSessionId) return;
 
-      const parseByAthletePage = (data) => {
-        if (!data || !Array.isArray(data.athletes)) return;
-        for (const entry of data.athletes) {
-          const ath = entry?.athlete;
-          if (!ath || !ath.id || !ath.displayName) continue;
-          const aid = String(ath.id);
-
-          // Extract GP, GS, and bulk season averages as baseline metadata
-          let gp = 0;
-          let gs = 0;
-          let pts = null, reb = null, ast = null, stl = null, blk = null;
-
-          const cats = entry?.categories || [];
-          for (const cat of cats) {
-            const names = Array.isArray(cat.names) ? cat.names : [];
-            const vals = Array.isArray(cat.values) ? cat.values : [];
-            names.forEach((n, idx) => {
-              const v = Number(vals[idx]);
-              if (Number.isNaN(v)) return;
-              if (n === 'gamesPlayed') gp = v;
-              else if (n === 'gamesStarted') gs = v;
-              else if (n === 'avgPoints') pts = Math.round(v * 10) / 10;
-              else if (n === 'avgRebounds') reb = Math.round(v * 10) / 10;
-              else if (n === 'avgAssists') ast = Math.round(v * 10) / 10;
-              else if (n === 'avgSteals') stl = Math.round(v * 10) / 10;
-              else if (n === 'avgBlocks') blk = Math.round(v * 10) / 10;
-            });
-          }
-
-          if (gp >= 2 && gs / gp >= 0.5) {
-            state.starterIds.add(aid);
-          }
-
-          const teamObj = ath.team || (Array.isArray(ath.teams) ? ath.teams[0] : null);
-          state.playerMap.set(aid, {
-            id: aid,
-            fullName: ath.displayName.trim(),
-            teamId: teamObj?.id ? String(teamObj.id) : '',
-            teamName: teamObj?.displayName || 'NBA',
-            teamAbbr: teamObj?.abbreviation || 'NBA',
-            jersey: ath.jersey || '?',
-            position: ath.position?.abbreviation || 'NBA',
-            headshot: ath.headshot?.href || `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`,
-            fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`,
-            bulkGp: gp,
-            bulkGs: gs,
-            bulkStats: (pts !== null && reb !== null && ast !== null && stl !== null && blk !== null)
-              ? { pts, reb, ast, stl, blk, gp }
-              : null
-          });
-        }
-      };
-
-      parseByAthletePage(page1);
-      parseByAthletePage(page2);
-
-      // Fetch all 30 team depth charts & rosters in parallel batches to guarantee exact starter tagging
       const rawTeams = teamsData?.sports?.[0]?.leagues?.[0]?.teams || [];
       const teams = rawTeams.map(t => t.team || t).filter(t => t && t.id);
 
-      if (statusEl) statusEl.textContent = 'Verifying NBA team depth charts & starting lineups...';
+      if (!teams.length) {
+        throw new Error('ESPN teams endpoint returned 0 NBA teams.');
+      }
 
       const batchSize = 6;
       for (let i = 0; i < teams.length; i += batchSize) {
         if (sessionId !== state.loadSessionId) return;
         const batch = teams.slice(i, i + batchSize);
+
         await Promise.all(
           batch.map(async (team) => {
             const tid = String(team.id);
-            const [dcData, rosterData] = await Promise.all([
-              fetchJsonStrict(ESPN_DEPTHCHART_URL(tid), 5500).catch(() => null),
-              fetchJsonStrict(ESPN_ROSTER_URL(tid), 5500).catch(() => null)
+            const [rosterData, dcData] = await Promise.all([
+              fetchJsonStrict(ESPN_ROSTER_URL(tid), 6000).catch(() => null),
+              fetchJsonStrict(ESPN_DEPTHCHART_URL(tid), 5500).catch(() => null)
             ]);
 
-            // Parse ESPN Depth Chart #1 starters (slot 0 at PG, SG, SF, PF, C)
+            // Parse ESPN Depth Chart #1 starters (slot 0 at each position)
             const charts = Array.isArray(dcData?.depthchart) ? dcData.depthchart : [];
             for (const chart of charts) {
               const positions = chart?.positions || {};
@@ -896,36 +873,31 @@
               }
             }
 
-            // Merge roster entries so every active player has accurate team/jersey/headshot
+            // Parse roster athletes
             if (Array.isArray(rosterData?.athletes)) {
               for (const group of rosterData.athletes) {
                 const items = Array.isArray(group?.items) ? group.items : [group];
                 for (const a of items) {
                   if (!a || !a.id || !(a.displayName || a.fullName)) continue;
                   const aid = String(a.id);
-                  const existing = state.playerMap.get(aid);
-                  if (!existing) {
-                    state.playerMap.set(aid, {
-                      id: aid,
-                      fullName: (a.displayName || a.fullName).trim(),
-                      teamId: tid,
-                      teamName: rosterData?.team?.displayName || team.displayName || 'NBA',
-                      teamAbbr: rosterData?.team?.abbreviation || team.abbreviation || 'NBA',
-                      jersey: a.jersey || '?',
-                      position: a.position?.abbreviation || 'NBA',
-                      headshot: a.headshot?.href || `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`,
-                      fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`,
-                      bulkGp: 0,
-                      bulkGs: 0,
-                      bulkStats: null
-                    });
-                  } else {
-                    existing.teamId = tid;
-                    existing.teamName = rosterData?.team?.displayName || team.displayName || existing.teamName;
-                    existing.teamAbbr = rosterData?.team?.abbreviation || team.abbreviation || existing.teamAbbr;
-                    if (a.jersey) existing.jersey = a.jersey;
-                    if (a.headshot?.href) existing.headshot = a.headshot.href;
+                  const inline = extractRosterInlineStats(a);
+
+                  if (inline && inline.gp >= 2 && inline.gs / inline.gp >= 0.5) {
+                    state.starterIds.add(aid);
                   }
+
+                  state.playerMap.set(aid, {
+                    id: aid,
+                    fullName: (a.displayName || a.fullName).trim(),
+                    teamId: tid,
+                    teamName: rosterData?.team?.displayName || team.displayName || 'NBA',
+                    teamAbbr: rosterData?.team?.abbreviation || team.abbreviation || 'NBA',
+                    jersey: a.jersey || '?',
+                    position: a.position?.abbreviation || 'NBA',
+                    headshot: a.headshot?.href || `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`,
+                    fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`,
+                    inlineStats: inline ? inline.stats : null
+                  });
                 }
               }
             }
@@ -933,20 +905,16 @@
         );
       }
 
-      // Filter player pool to active players who have played in the season (or are listed on rosters)
-      const allPlayers = Array.from(state.playerMap.values());
-      const activeWithGames = allPlayers.filter(p => p.bulkGp >= 1);
-      state.players = activeWithGames.length >= 20 ? activeWithGames : allPlayers;
-
+      state.players = Array.from(state.playerMap.values());
       if (state.players.length < 5) {
-        throw new Error('ESPN returned fewer than 5 active NBA players.');
+        throw new Error('ESPN roster endpoints returned fewer than 5 NBA players.');
       }
     }
 
     /**
      * Step 3 (CRITICAL ACCURACY ENGINE):
-     * Compute exact per-game averages strictly GOING INTO TODAY from ESPN's athlete gamelog.
-     * Excludes any live game or completed game played on or after today's EST calendar date.
+     * Computes exact per-game averages strictly GOING INTO TODAY via sports.core.api.espn.com eventlog.
+     * Excludes any live game or completed game played on or after today's EST date.
      */
     async function getVerifiedPreTodayStats(player) {
       if (!player || !player.id) return null;
@@ -959,115 +927,115 @@
         return null;
       }
 
+      // Fast path: if the player's team is NOT playing today and we already have inline ESPN season averages
+      if (!state.teamsPlayingToday.has(player.teamId) && player.inlineStats && player.inlineStats.gp >= 1) {
+        state.verifiedStatsCache.set(aid, player.inlineStats);
+        return player.inlineStats;
+      }
+
       try {
-        const logData = await fetchJsonStrict(ESPN_GAMELOG_URL(aid), 6000);
-        const labels = Array.isArray(logData?.labels) ? logData.labels.map(l => String(l).toUpperCase()) : [];
-        const names = Array.isArray(logData?.names) ? logData.names.map(n => String(n).toLowerCase()) : [];
-        const eventsMeta = logData?.events || {};
-        const seasonTypes = Array.isArray(logData?.seasonTypes) ? logData.seasonTypes : [];
+        const logData = await fetchJsonStrict(ESPN_CORE_EVENTLOG_URL(aid), 6500);
+        const items = Array.isArray(logData?.events?.items) ? logData.events.items : [];
 
-        const findIdx = (labelMatch, nameMatch) => {
-          let i = names.indexOf(nameMatch);
-          if (i !== -1) return i;
-          return labels.indexOf(labelMatch);
-        };
+        const validItems = [];
+        const seenEvents = new Set();
 
-        const ptsIdx = findIdx('PTS', 'points');
-        const rebIdx = findIdx('REB', 'rebounds');
-        const astIdx = findIdx('AST', 'assists');
-        const stlIdx = findIdx('STL', 'steals');
-        const blkIdx = findIdx('BLK', 'blocks');
-        const minIdx = findIdx('MIN', 'minutes');
+        for (const item of items) {
+          if (!item || item.played === false) continue;
+          const evRef = toHttps(item?.event?.$ref || '');
+          const statRef = toHttps(item?.statistics?.$ref || '');
+          if (!evRef || !statRef) continue;
 
-        if (ptsIdx === -1 || rebIdx === -1 || astIdx === -1 || stlIdx === -1 || blkIdx === -1) {
-          throw new Error('Missing stat columns in ESPN gamelog');
+          const evIdMatch = evRef.match(/\/events\/(\d+)/);
+          const evId = evIdMatch ? evIdMatch[1] : evRef;
+          if (seenEvents.has(evId)) continue;
+          seenEvents.add(evId);
+
+          // Exclude if event is on today's scoreboard
+          if (state.todayEventIds.has(evId)) continue;
+
+          validItems.push({ evId, evRef, statRef });
         }
 
-        // Prefer Regular Season (type 2), or Postseason (type 3) if postseason games have been played before today
-        const computeForSeasonType = (st) => {
-          let gp = 0;
-          let sumPts = 0, sumReb = 0, sumAst = 0, sumStl = 0, sumBlk = 0;
-          const seenEventIds = new Set();
-
-          const categories = Array.isArray(st?.categories) ? st.categories : [];
-          for (const cat of categories) {
-            const catEvents = Array.isArray(cat?.events) ? cat.events : [];
-            for (const evRow of catEvents) {
-              const evId = String(evRow?.eventId || '');
-              if (!evId || seenEventIds.has(evId)) continue;
-              seenEventIds.add(evId);
-
-              // 1. Exclude if eventId is on today's scoreboard (live, scheduled, or played today)
-              if (state.todayEventIds.has(evId)) continue;
-
-              // 2. Exclude if gameDate in EST is today or in the future
-              const meta = eventsMeta[evId];
-              if (meta?.gameDate) {
-                const { dateKey: gameEstDate } = getEstDateInfo(new Date(meta.gameDate));
-                if (gameEstDate >= state.todayDateKey) continue;
-              }
-
-              const statsArr = Array.isArray(evRow?.stats) ? evRow.stats : [];
-              const ptsVal = parseFloat(statsArr[ptsIdx]);
-              const rebVal = parseFloat(statsArr[rebIdx]);
-              const astVal = parseFloat(statsArr[astIdx]);
-              const stlVal = parseFloat(statsArr[stlIdx]);
-              const blkVal = parseFloat(statsArr[blkIdx]);
-
-              if ([ptsVal, rebVal, astVal, stlVal, blkVal].some(v => Number.isNaN(v))) continue;
-
-              // Ensure player actually logged minutes (excludes DNP rows if ever present)
-              if (minIdx !== -1) {
-                const minVal = parseFloat(statsArr[minIdx]);
-                if (!Number.isNaN(minVal) && minVal <= 0) continue;
-              }
-
-              gp++;
-              sumPts += ptsVal;
-              sumReb += rebVal;
-              sumAst += astVal;
-              sumStl += stlVal;
-              sumBlk += blkVal;
-            }
-          }
-
-          if (gp === 0) return null;
-          return {
-            gp,
-            pts: Math.round((sumPts / gp) * 10) / 10,
-            reb: Math.round((sumReb / gp) * 10) / 10,
-            ast: Math.round((sumAst / gp) * 10) / 10,
-            stl: Math.round((sumStl / gp) * 10) / 10,
-            blk: Math.round((sumBlk / gp) * 10) / 10
-          };
-        };
-
-        // Check Regular Season first (displayName includes "Regular Season" or type === 2)
-        const regSeason = seasonTypes.find(st =>
-          /regular/i.test(String(st?.displayName || '')) || Number(st?.seasonType) === 2
-        ) || seasonTypes[0];
-
-        const postSeason = seasonTypes.find(st =>
-          /postseason|playoff/i.test(String(st?.displayName || '')) || Number(st?.seasonType) === 3
-        );
-
-        let result = postSeason ? computeForSeasonType(postSeason) : null;
-        if (!result && regSeason) {
-          result = computeForSeasonType(regSeason);
-        }
-
-        if (!result || result.gp < 1) {
+        if (validItems.length === 0) {
           state.invalidPlayerIds.add(aid);
           return null;
         }
 
-        state.verifiedStatsCache.set(aid, result);
-        return result;
+        let gp = 0;
+        let sumPts = 0, sumReb = 0, sumAst = 0, sumStl = 0, sumBlk = 0;
+
+        // Fetch event metadata + player boxscore stats in parallel batches
+        const batchSize = 15;
+        for (let i = 0; i < validItems.length; i += batchSize) {
+          const chunk = validItems.slice(i, i + batchSize);
+          await Promise.all(
+            chunk.map(async (entry) => {
+              const [evJson, stJson] = await Promise.all([
+                fetchJsonStrict(entry.evRef, 5500).catch(() => null),
+                fetchJsonStrict(entry.statRef, 5500).catch(() => null)
+              ]);
+
+              if (!stJson) return;
+
+              // Verify game date in EST is strictly BEFORE today
+              if (evJson?.date) {
+                const { dateKey: gameEstDate } = getEstDateInfo(new Date(evJson.date));
+                if (gameEstDate >= state.todayDateKey) return;
+              }
+
+              const cats = stJson?.splits?.categories || [];
+              const vals = {};
+              for (const c of cats) {
+                if (Array.isArray(c?.stats)) {
+                  for (const s of c.stats) {
+                    const key = String(s?.name || '').toLowerCase();
+                    if (key) vals[key] = parseFloat(s.value);
+                  }
+                }
+              }
+
+              // Skip DNP rows with 0 minutes
+              if (typeof vals.minutes === 'number' && vals.minutes <= 0) return;
+
+              if (
+                typeof vals.points === 'number' && !Number.isNaN(vals.points) &&
+                typeof vals.rebounds === 'number' && !Number.isNaN(vals.rebounds) &&
+                typeof vals.assists === 'number' && !Number.isNaN(vals.assists) &&
+                typeof vals.steals === 'number' && !Number.isNaN(vals.steals) &&
+                typeof vals.blocks === 'number' && !Number.isNaN(vals.blocks)
+              ) {
+                gp++;
+                sumPts += vals.points;
+                sumReb += vals.rebounds;
+                sumAst += vals.assists;
+                sumStl += vals.steals;
+                sumBlk += vals.blocks;
+              }
+            })
+          );
+        }
+
+        if (gp === 0) {
+          state.invalidPlayerIds.add(aid);
+          return null;
+        }
+
+        const verified = {
+          gp,
+          pts: Math.round((sumPts / gp) * 10) / 10,
+          reb: Math.round((sumReb / gp) * 10) / 10,
+          ast: Math.round((sumAst / gp) * 10) / 10,
+          stl: Math.round((sumStl / gp) * 10) / 10,
+          blk: Math.round((sumBlk / gp) * 10) / 10
+        };
+
+        state.verifiedStatsCache.set(aid, verified);
+        return verified;
       } catch (_) {
-        // Fallback ONLY if gamelog request failed AND the player's team has NO game today
-        if (player.bulkStats && player.bulkStats.gp >= 1 && !state.teamsPlayingToday.has(player.teamId)) {
-          state.verifiedStatsCache.set(aid, player.bulkStats);
-          return player.bulkStats;
+        if (!state.teamsPlayingToday.has(player.teamId) && player.inlineStats && player.inlineStats.gp >= 1) {
+          state.verifiedStatsCache.set(aid, player.inlineStats);
+          return player.inlineStats;
         }
         return null;
       }
@@ -1075,14 +1043,6 @@
 
     /**
      * Exact Stathead Scoring Formula
-     * - <= 0.2 off: 80 pts
-     * - <= 0.4 off: 70 pts
-     * - <= 0.6 off: 60 pts
-     * - <= 0.8 off: 50 pts
-     * - <= 1.0 off: 40 pts
-     * - > 1.0 and < 3.0 off: 20 pts
-     * - = 3.0 off: 10 pts
-     * - > 3.0 off: 0 pts
      */
     function calculateStatheadPoints(roundedGuess, actualStat) {
       const target = Math.round(actualStat * 10) / 10;
@@ -1319,24 +1279,20 @@
       const { dateKey } = getEstDateInfo();
       const rng = mulberry32(hashString('STATHEAD_DAILY_V1_' + dateKey));
 
-      // Deterministic random stat category from the 5 options
       const catIndex = Math.floor(rng() * STAT_CATEGORIES.length);
       const chosenCategory = STAT_CATEGORIES[catIndex];
 
-      // Build canonical sorted list of verified starters
       let starters = state.players.filter(p => state.starterIds.has(p.id) && !state.brokenImageIds.has(p.id));
       if (starters.length < 10) {
         starters = state.players.filter(p => !state.brokenImageIds.has(p.id));
       }
       starters.sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
-      // Deterministic Fisher-Yates shuffle
       for (let i = starters.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         [starters[i], starters[j]] = [starters[j], starters[i]];
       }
 
-      // Find the first starter in today's deterministic order who has verified GP >= 1 going into today
       for (const candidate of starters) {
         const stats = await getVerifiedPreTodayStats(candidate);
         if (stats && stats.gp >= 1) {
@@ -1471,10 +1427,17 @@
       safeSetStorage('stathead_player_name', enteredName);
 
       const startBtn = document.getElementById('start-daily-btn');
-      if (startBtn) startBtn.disabled = true;
+      const origBtnHtml = startBtn ? startBtn.innerHTML : '';
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Verifying Starter Stats...';
+      }
 
       const resolved = await resolveDailyStarterChallenge();
-      if (startBtn) startBtn.disabled = false;
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = origBtnHtml;
+      }
 
       if (!resolved) return;
 
@@ -1512,7 +1475,6 @@
         usedSet.clear();
       }
 
-      // Shuffle candidates and pick the first one whose pre-today gamelog verifies cleanly
       const unseen = validPool.filter(p => !usedSet.has(p.id));
       const candidates = [...(unseen.length > 0 ? unseen : validPool)];
       for (let i = candidates.length - 1; i > 0; i--) {
@@ -1623,7 +1585,6 @@
       const feedbackEl = document.getElementById('inline-feedback');
       const rawStr = inputEl.value.trim();
 
-      // Strict validation: must be a valid finite non-negative number
       const parsedNum = Number(rawStr);
       if (rawStr === '' || !Number.isFinite(parsedNum) || parsedNum < 0) {
         inputEl.classList.remove('animate-shake');
@@ -1635,7 +1596,6 @@
         return;
       }
 
-      // Round to nearest tenth if player entered more than 1 decimal
       const roundedGuess = Math.round(parsedNum * 10) / 10;
       const wasRounded = Math.abs(parsedNum - roundedGuess) > 1e-9;
 
@@ -1646,7 +1606,6 @@
 
       const { points, diff, target } = calculateStatheadPoints(roundedGuess, state.currentVerifiedStat);
 
-      // Update UI Reveal Banner
       const banner = document.getElementById('reveal-banner');
       const badge = document.getElementById('result-badge');
       const cardSurface = document.getElementById('card-surface');
@@ -1687,7 +1646,6 @@
         ? `Rounded ${parsedNum} to nearest tenth (${roundedGuess.toFixed(1)}).`
         : `Locked in ${roundedGuess.toFixed(1)} ${STAT_META[state.currentStatCategory].abbr}.`;
 
-      // Handle Mode-Specific Persistence & Next Steps
       if (state.gameMode === 'daily') {
         const completionRecord = {
           name: state.playerName || safeGetStorage('stathead_player_name') || 'Player',
@@ -1764,7 +1722,6 @@
       }
     }
 
-    // Keyboard shortcut: Enter advances to Next Player in Infinite modes after answering
     document.addEventListener('keydown', (e) => {
       if (state.gameMode !== 'daily' && state.roundAnswered && e.key === 'Enter') {
         if (document.activeElement?.tagName !== 'BUTTON') {
