@@ -2308,4 +2308,39 @@
 
         badge.className = 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-1 bg-amber-500/20 text-amber-300 border border-amber-500/30';
         badge.textContent = 'Revealed';
-        cardSurface
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-amber-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-amber-500/20 blur-2xl rounded-full transition-colors duration-300';
+      }
+
+      document.getElementById('revealed-name').textContent = p.fullName;
+      const mpgText = typeof p.mpg === 'number' && p.mpg > 0 ? ` • ${p.mpg.toFixed(1)} MPG` : '';
+      document.getElementById('revealed-meta').textContent = `${p.teamName} • #${p.jersey} • ${p.position}${mpgText}`;
+      document.getElementById('next-action-container').classList.remove('hidden');
+      document.getElementById('next-player-btn').focus();
+    }
+
+    /**
+     * Keyboard shortcut: Enter advances to Next Player in Infinite mode after round ends
+     */
+    document.addEventListener('keydown', (e) => {
+      if (state.gameMode === 'infinite' && state.roundAnswered && e.key === 'Enter') {
+        if (document.activeElement?.tagName !== 'BUTTON') {
+          e.preventDefault();
+          nextRound();
+        }
+      }
+    });
+
+    // Boot synchronously on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        updateEstCountdowns();
+        initGame();
+      });
+    } else {
+      updateEstCountdowns();
+      initGame();
+    }
+  </script>
+</body>
+</html>
