@@ -238,14 +238,10 @@
         <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
           <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">10-Second Daily Gauntlet</h2>
           <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
-            Name as many current NBA players (&gt;10 MPG) from today's pool with no repeats. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
+            Name as many current NBA players in a row as possible. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
           </p>
 
-          <div class="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-5">
-            <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
-              <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Today's Pool</div>
-              <div id="daily-pool-size" class="text-lg font-black text-white mt-0.5">--</div>
-            </div>
+          <div class="max-w-xs mx-auto mb-5">
             <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
               <div class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Resets In</div>
               <div id="daily-lobby-countdown" class="text-sm sm:text-base font-mono font-bold text-amber-400 mt-1">--:--:--</div>
@@ -680,21 +676,19 @@
      */
     function rebuildDailySeedPool() {
       const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
-      const qualifiedByMpg = validPlayers.filter(p => typeof p.mpg === 'number' && p.mpg > 10.0);
-      const sourcePool = qualifiedByMpg.length > 0 ? qualifiedByMpg : validPlayers;
 
       // Deduplicate by both canonical ID and normalized full name so no player ever appears twice
       const seenKeys = new Set();
-      const uniqueQualified = [];
-      for (const p of sourcePool) {
+      const uniquePlayers = [];
+      for (const p of validPlayers) {
         const key = `${p.espnId || p.id}|${normalizeName(p.fullName)}`;
         if (!seenKeys.has(key)) {
           seenKeys.add(key);
-          uniqueQualified.push(p);
+          uniquePlayers.push(p);
         }
       }
 
-      const canonical = uniqueQualified.sort((a, b) =>
+      const canonical = uniquePlayers.sort((a, b) =>
         String(a.espnId || a.id).localeCompare(String(b.espnId || b.id))
       );
 
@@ -708,20 +702,11 @@
 
       state.dailySeedPool = canonical;
 
-      const poolSizeEl = document.getElementById('daily-pool-size');
-      if (poolSizeEl) {
-        if (state.mpgSyncComplete) {
-          poolSizeEl.textContent = `${state.dailySeedPool.length} Players (>10 MPG)`;
-        } else {
-          poolSizeEl.textContent = `Syncing (>10 MPG)...`;
-        }
-      }
       const badgeEl = document.getElementById('roster-mode-badge');
       if (badgeEl && state.gameMode === 'daily') {
-        badgeEl.textContent = 'Daily Gauntlet (>10 MPG)';
+        badgeEl.textContent = 'Daily Gauntlet';
       }
     }
-
     /**
      * Once-Per-Day Device Completion Lockout & Global Leaderboard Service
      */
@@ -1682,7 +1667,7 @@
       document.getElementById('card-surface').classList.remove('hidden');
       document.getElementById('daily-timer-header').classList.remove('hidden');
       document.getElementById('daily-live-score').textContent = '0';
-      document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet (>10 MPG)';
+      document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet';
       document.getElementById('give-up-btn').classList.add('hidden');
 
       if (loadDailyPlayer(0)) {
@@ -1702,8 +1687,6 @@
         if (
           candidate &&
           !state.brokenImageIds.has(candidate.id) &&
-          typeof candidate.mpg === 'number' &&
-          candidate.mpg > 10.0 &&
           !state.usedDailyIds.has(uniqueKey)
         ) {
           chosenPlayer = candidate;
