@@ -724,27 +724,34 @@
     /**
      * Fetch JSON with zero custom headers (prevents CORS preflight blocks)
      */
-    async function fetchJsonStrict(url, timeoutMs = 8000) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          signal: controller.signal,
-          mode: 'cors',
-          credentials: 'omit'
-        });
-        clearTimeout(timer);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} on ${url}`);
+async function fetchJsonStrict(url, timeoutMs = 8000) {
+      const candidates = [
+        url,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      ];
+
+      let lastErr = null;
+      for (const targetUrl of candidates) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(targetUrl, {
+            signal: controller.signal,
+            mode: 'cors',
+            credentials: 'omit'
+          });
+          clearTimeout(timer);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return await res.json();
+        } catch (err) {
+          clearTimeout(timer);
+          lastErr = err;
         }
-        return await res.json();
-      } catch (err) {
-        clearTimeout(timer);
-        if (err && err.name === 'AbortError') {
-          throw new Error(`Timeout (${timeoutMs}ms) on ${url}`);
-        }
-        throw new Error(`${err?.message || 'Failed to fetch'} (${url})`);
       }
+      throw new Error(`${lastErr?.message || 'Failed to fetch'} (${url})`);
     }
 
     /**
