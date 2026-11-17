@@ -308,7 +308,6 @@
             <div class="min-w-0">
               <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ran out of time on</div>
               <div id="daily-missed-name" class="text-sm sm:text-base font-extrabold text-white truncate">--</div>
-              <div id="daily-missed-meta" class="text-xs text-zinc-400 truncate">--</div>
             </div>
           </div>
 
@@ -1576,12 +1575,6 @@
         };
         missedImg.src = missed.headshot;
         document.getElementById('daily-missed-name').textContent = missed.fullName;
-        const isGeneric = (t) => !t || t === 'NBA' || t === 'Active NBA Roster';
-        const liveMatch = state.players.find(p => p.fullName === missed.fullName && !isGeneric(p.teamName));
-        const displayTeam = !isGeneric(missed.teamName)
-          ? missed.teamName
-          : (liveMatch ? liveMatch.teamName : 'NBA');
-        document.getElementById('daily-missed-meta').textContent = displayTeam;
       } else {
         missedBox.classList.add('hidden');
       }
