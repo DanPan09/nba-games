@@ -237,7 +237,7 @@
           <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
             <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Daily Stathead</h2>
             <p class="text-sm text-zinc-400 max-w-md mx-auto mb-5 leading-relaxed">
-              Guess today's player's 2026–27 Points, Assists, and Rebounds per game going into today. 10 seconds per category.
+              Guess today's player's 2026–27 Points, Assists, and Rebounds per game going into today. 10 seconds per category, and closer guesses grant more points.
             </p>
 
             <div class="max-w-xs mx-auto mb-5">
@@ -496,8 +496,8 @@
     // errorMultiplier converts any stat error into Points-equivalent error
     const STAT_META = {
       Points:   { key: 'pts', abbr: 'PPG', label: 'Points Per Game',   errorMultiplier: 1 },
-      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 20 / 4 },
-      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }
+      Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 4 },
+      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 3 }
     };
 
     /**
@@ -1263,11 +1263,11 @@
       if (diff === 0 || eqDiff === 0) points = 100;
       else if (eqDiff <= 0.2) points = 80;
       else if (eqDiff <= 0.5) points = 70;
-      else if (eqDiff <= 0.7) points = 60;
-      else if (eqDiff <= 1.0) points = 50;
-      else if (eqDiff <= 2.0) points = 40;
-      else if (eqDiff < 4.5) points = 20;
-      else if (Math.abs(eqDiff - 3.0) < 1e-4) points = 10;
+      else if (eqDiff <= 0.8) points = 60;
+      else if (eqDiff <= 1.2) points = 50;
+      else if (eqDiff <= 2.5) points = 40;
+      else if (eqDiff <= 3.5) points = 20;
+      else if (eqDiff <= 5.5) points = 10; // Change 5.0 to whatever max error you want for 10 pts
       else points = 0;
 
       return { points, diff, target };
