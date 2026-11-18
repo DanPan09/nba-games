@@ -1475,7 +1475,80 @@
     }
 
     /**
-     * Determine Today's Deterministic Daily Starter (2026-27 Season)
+     * Shared Supabase Daily Seed Lock (ensures normal tabs, Incognito, and all devices
+     * play the exact same daily starter all day)
+     */
+    const DAILY_SEED_TABLE = 'stathead_daily_seeds';
+
+    async function fetchRemoteStatheadSeed(dateKey) {
+      if (!isRemoteLeaderboardEnabled()) return null;
+      try {
+        const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
+        const url = `${base}/rest/v1/${DAILY_SEED_TABLE}?daily_date=eq.${encodeURIComponent(dateKey)}&select=player_ids&limit=1`;
+        const res = await fetch(url, {
+          headers: {
+            'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim(),
+            'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()}`
+          }
+        });
+        if (!res.ok) return null;
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0].player_ids)) {
+          return rows[0].player_ids.map(String);
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    async function lockRemoteStatheadSeed(dateKey, playerIds) {
+      if (!isRemoteLeaderboardEnabled() || !Array.isArray(playerIds) || !playerIds.length) return;
+      try {
+        const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
+        await fetch(`${base}/rest/v1/${DAILY_SEED_TABLE}?on_conflict=daily_date`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim(),
+            'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()}`,
+            'Prefer': 'resolution=ignore-duplicates,return=minimal'
+          },
+          body: JSON.stringify({
+            daily_date: dateKey,
+            player_ids: playerIds
+          })
+        });
+      } catch (_) {}
+    }
+
+    function applyLockedStatheadPoolOrder(pool, lockedIds) {
+      if (!Array.isArray(lockedIds) || lockedIds.length === 0) return pool;
+      const byId = new Map();
+      for (const p of pool) {
+        const id = String(p.espnId);
+        if (!byId.has(id)) byId.set(id, p);
+      }
+      const ordered = [];
+      const seen = new Set();
+      for (const rawId of lockedIds) {
+        const id = String(rawId);
+        const player = byId.get(id);
+        if (player && !seen.has(id)) {
+          seen.add(id);
+          ordered.push(player);
+        }
+      }
+      for (const p of pool) {
+        const id = String(p.espnId);
+        if (!seen.has(id)) {
+          seen.add(id);
+          ordered.push(p);
+        }
+      }
+      return ordered;
+    }
+
+    /**
+     * Determine Today's Deterministic Daily Starter (2026-27 Season, Supabase-Locked)
      */
     async function resolveDailyStarterChallenge() {
       if (state.dailyStarter && state.dailyStarterStats) {
@@ -1485,7 +1558,7 @@
       const { dateKey } = getEstDateInfo();
       const rng = mulberry32(hashString(`STATHEAD_DAILY_${NBA_SEASON_YEAR}_${dateKey}`));
 
-      const pool = state.players
+      let pool = state.players
         .filter(p => p.espnId && /^\d+$/.test(p.espnId) && !state.brokenImageIds.has(p.id))
         .sort((a, b) => String(a.espnId).localeCompare(String(b.espnId)));
 
@@ -1494,6 +1567,13 @@
         [pool[i], pool[j]] = [pool[j], pool[i]];
       }
 
+      const remoteLockedIds = await fetchRemoteStatheadSeed(dateKey);
+      const hadRemoteLock = Array.isArray(remoteLockedIds) && remoteLockedIds.length > 0;
+      if (hadRemoteLock) {
+        pool = applyLockedStatheadPoolOrder(pool, remoteLockedIds);
+      }
+
+      let chosen = null;
       let fallbackActive = null;
       let checked = 0;
 
@@ -1502,9 +1582,8 @@
         checked++;
         if (stats && stats.gp >= 1) {
           if (stats.isStarter) {
-            state.dailyStarter = candidate;
-            state.dailyStarterStats = stats;
-            return { player: candidate, stats };
+            chosen = { player: candidate, stats };
+            break;
           }
           if (!fallbackActive) {
             fallbackActive = { player: candidate, stats };
@@ -1515,11 +1594,35 @@
         }
       }
 
-      if (fallbackActive) {
-        state.dailyStarter = fallbackActive.player;
-        state.dailyStarterStats = fallbackActive.stats;
+      if (!chosen && fallbackActive) {
+        chosen = fallbackActive;
       }
-      return fallbackActive;
+
+      if (chosen && !hadRemoteLock) {
+        const chosenId = String(chosen.player.espnId);
+        const seedIds = [
+          chosenId,
+          ...pool.map(p => String(p.espnId)).filter(id => id !== chosenId)
+        ];
+        await lockRemoteStatheadSeed(dateKey, seedIds);
+
+        const confirmedIds = await fetchRemoteStatheadSeed(dateKey);
+        if (Array.isArray(confirmedIds) && confirmedIds.length > 0 && String(confirmedIds[0]) !== chosenId) {
+          const winnerCandidate = pool.find(p => String(p.espnId) === String(confirmedIds[0]));
+          if (winnerCandidate) {
+            const winnerStats = await getVerifiedPreTodayStats(winnerCandidate);
+            if (winnerStats && winnerStats.gp >= 1) {
+              chosen = { player: winnerCandidate, stats: winnerStats };
+            }
+          }
+        }
+      }
+
+      if (chosen) {
+        state.dailyStarter = chosen.player;
+        state.dailyStarterStats = chosen.stats;
+      }
+      return chosen;
     }
 
     /**
@@ -2028,6 +2131,7 @@
         document.getElementById('game-card').classList.remove('hidden');
 
         updateEstCountdowns();
+        resolveDailyStarterChallenge().catch(() => {});
         setGameMode('daily');
       } catch (err) {
         if (sessionId !== state.loadSessionId) return;
