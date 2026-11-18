@@ -411,7 +411,6 @@
           <div id="reveal-banner" class="hidden px-6 py-4 bg-zinc-950/70 border-b border-zinc-800/80 text-center">
             <div id="result-badge" class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-1"></div>
             <h2 id="revealed-name" class="text-xl sm:text-2xl font-black text-white tracking-tight"></h2>
-            <p id="revealed-meta" class="text-xs sm:text-sm text-zinc-400 font-medium mt-0.5"></p>
           </div>
 
           <!-- Typed Guess Interaction Area -->
@@ -486,7 +485,7 @@
     const NBA_SEASON_YEAR = 2027;
     const NBA_SEASON_LABEL = '2026-27';
     const NBA_REGULAR_SEASON_TYPE = 2;
-    const MIN_QUALIFYING_MPG = 8; // Strictly > 8.0 MPG and >= 1 GP
+    const MIN_QUALIFYING_MPG = 5; // Strictly > 8.0 MPG and >= 1 GP
 
     /**
      * Global Leaderboard Configuration (Supabase / REST)
@@ -2678,8 +2677,6 @@
       }
 
       document.getElementById('revealed-name').textContent = p.fullName;
-      const mpgText = typeof p.mpg === 'number' && p.mpg > 0 ? ` • ${p.mpg.toFixed(1)} MPG` : '';
-      document.getElementById('revealed-meta').textContent = `${p.teamName} • #${p.jersey} • ${p.position}${mpgText}`;
       document.getElementById('next-action-container').classList.remove('hidden');
       document.getElementById('next-player-btn').focus();
     }
