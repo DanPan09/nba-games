@@ -237,7 +237,7 @@
           <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
             <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Daily Stathead</h2>
             <p class="text-sm text-zinc-400 max-w-md mx-auto mb-5 leading-relaxed">
-              3 rounds on today's featured NBA Player: predict their 2026–27 Points, Assists, and Rebounds per game going into today.
+              Guess today's player's 2026–27 Points, Assists, and Rebounds per game going into today. 10 seconds per category.
             </p>
 
             <div class="max-w-xs mx-auto mb-5">
@@ -340,6 +340,23 @@
           <!-- ACTIVE PLAYER CARD (Shared by Daily & Infinite) -->
           <div id="card-surface" class="hidden bg-zinc-900/90 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300">
 
+            <!-- Daily 10-Second Shot Clock Strip (Matches EBK) -->
+            <div id="daily-timer-bar-container" class="hidden bg-zinc-950/90 px-6 pt-3 pb-2 border-b border-zinc-800/80">
+              <div class="flex items-center justify-between text-xs font-bold mb-1.5">
+                <span class="text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Category Clock
+                </span>
+                <span id="daily-timer-text" class="font-mono text-sm font-extrabold text-emerald-400">10.0s</span>
+              </div>
+              <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div id="daily-timer-fill" class="h-full bg-emerald-500 transition-all duration-75 ease-linear" style="width: 100%"></div>
+              </div>
+            </div>
+
             <!-- Top Player Stage -->
             <div class="player-stage relative pt-5 pb-5 px-6 flex flex-col items-center border-b border-zinc-800/80">
 
@@ -377,7 +394,7 @@
               </div>
             </div>
 
-            <!-- Result Reveal Banner (Shown after submitting guess) -->
+            <!-- Result Reveal Banner (Shown after submitting guess or time expiring) -->
             <div id="reveal-banner" class="hidden px-6 py-4 bg-zinc-950/80 border-b border-zinc-800/80 text-center">
               <div id="result-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2"></div>
               <div class="flex items-center justify-center gap-6 sm:gap-10 mt-1">
@@ -460,6 +477,7 @@
     const NBA_SEASON_YEAR = 2027;
     const NBA_SEASON_LABEL = '2026-27';
     const NBA_REGULAR_SEASON_TYPE = 2;
+    const DAILY_ROUND_DURATION_MS = 10000; // 10 seconds per category in Daily mode
 
     /**
      * Global Leaderboard Configuration (Supabase REST)
@@ -479,7 +497,7 @@
     const STAT_META = {
       Points:   { key: 'pts', abbr: 'PPG', label: 'Points Per Game',   errorMultiplier: 1 },
       Assists:  { key: 'ast', abbr: 'APG', label: 'Assists Per Game',  errorMultiplier: 20 / 4 },
-      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }  
+      Rebounds: { key: 'reb', abbr: 'RPG', label: 'Rebounds Per Game', errorMultiplier: 20 / 6 }
     };
 
     /**
@@ -555,7 +573,9 @@
       dailyStarter: null,
       dailyStarterStats: null,
       dailyRoundIndex: 0,            // 0 = Points, 1 = Assists, 2 = Rebounds
-      dailyRoundResults: [],         // [{ category, userGuess, actualStat, points, diff }]
+      dailyRoundResults: [],         // [{ category, userGuess, actualStat, points, diff, timedOut }]
+      dailyTimerInterval: null,
+      dailyRoundDeadline: 0,
 
       // Infinite Mode unseen pool
       usedInfiniteIds: new Set()
@@ -636,6 +656,144 @@
     }
 
     setInterval(updateEstCountdowns, 1000);
+
+    /**
+     * 10-Second Daily Shot Clock Helpers (Matches EBK)
+     */
+    function stopDailyCategoryTimer() {
+      if (state.dailyTimerInterval) {
+        clearInterval(state.dailyTimerInterval);
+        state.dailyTimerInterval = null;
+      }
+    }
+
+    function startDailyCategoryTimer() {
+      stopDailyCategoryTimer();
+      const timerContainer = document.getElementById('daily-timer-bar-container');
+      const timerText = document.getElementById('daily-timer-text');
+      const timerFill = document.getElementById('daily-timer-fill');
+
+      if (!timerContainer || !timerText || !timerFill) return;
+
+      timerContainer.classList.remove('hidden');
+      state.dailyRoundDeadline = Date.now() + DAILY_ROUND_DURATION_MS;
+
+      const tick = () => {
+        if (state.gameMode !== 'daily' || state.roundAnswered) {
+          stopDailyCategoryTimer();
+          return;
+        }
+        const remainingMs = Math.max(0, state.dailyRoundDeadline - Date.now());
+        const pct = (remainingMs / DAILY_ROUND_DURATION_MS) * 100;
+        timerText.textContent = `${(remainingMs / 1000).toFixed(1)}s`;
+        timerFill.style.width = `${pct}%`;
+
+        if (pct > 50) {
+          timerText.className = 'font-mono text-sm font-extrabold text-emerald-400';
+          timerFill.className = 'h-full bg-emerald-500 transition-all duration-75 ease-linear';
+        } else if (pct > 25) {
+          timerText.className = 'font-mono text-sm font-extrabold text-amber-400';
+          timerFill.className = 'h-full bg-amber-500 transition-all duration-75 ease-linear';
+        } else {
+          timerText.className = 'font-mono text-sm font-extrabold text-red-400 animate-pulse';
+          timerFill.className = 'h-full bg-red-500 transition-all duration-75 ease-linear';
+        }
+
+        if (remainingMs <= 0) {
+          stopDailyCategoryTimer();
+          handleDailyTimeout();
+        }
+      };
+
+      tick();
+      state.dailyTimerInterval = setInterval(tick, 50);
+    }
+
+    function handleDailyTimeout() {
+      if (state.roundAnswered || state.gameMode !== 'daily' || !state.currentPlayer || state.currentVerifiedStat === null) {
+        return;
+      }
+
+      const inputEl = document.getElementById('stat-input');
+      const feedbackEl = document.getElementById('inline-feedback');
+      const rawStr = inputEl ? inputEl.value.trim() : '';
+      const parsedNum = Number(rawStr);
+      const hasValidTypedGuess = rawStr !== '' && Number.isFinite(parsedNum) && parsedNum >= 0;
+
+      state.roundAnswered = true;
+      feedbackEl.classList.add('hidden');
+      inputEl.disabled = true;
+      document.getElementById('submit-guess-btn').disabled = true;
+
+      let roundedGuess = null;
+      let points = 0;
+      let diff = 0;
+      const target = Math.round(state.currentVerifiedStat * 10) / 10;
+
+      if (hasValidTypedGuess) {
+        roundedGuess = Math.round(parsedNum * 10) / 10;
+        inputEl.value = roundedGuess.toFixed(1);
+        const calc = calculateStatheadPoints(roundedGuess, state.currentVerifiedStat, state.currentStatCategory);
+        points = calc.points;
+        diff = calc.diff;
+      } else {
+        inputEl.value = '';
+        points = 0;
+        diff = target;
+      }
+
+      const banner = document.getElementById('reveal-banner');
+      const badge = document.getElementById('result-badge');
+      const cardSurface = document.getElementById('card-surface');
+      const glow = document.getElementById('player-glow');
+
+      banner.classList.remove('hidden');
+      banner.classList.add('animate-pop');
+
+      document.getElementById('revealed-user-guess').textContent = hasValidTypedGuess ? roundedGuess.toFixed(1) : '--';
+      document.getElementById('revealed-actual-stat').textContent = target.toFixed(1);
+      document.getElementById('revealed-diff').textContent = hasValidTypedGuess
+        ? (diff === 0 ? '0.0 (!!!)' : `${diff.toFixed(1)}`)
+        : 'Time Up';
+      document.getElementById('revealed-gp-note').textContent =
+        `${state.currentVerifiedGp} game${state.currentVerifiedGp === 1 ? '' : 's'} played in ${NBA_SEASON_LABEL}.`;
+
+      if (hasValidTypedGuess && points > 0) {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        badge.textContent = `Time's Up! +${points} Points`;
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-amber-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-amber-500/20 blur-2xl rounded-full transition-colors duration-300';
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 bg-red-500/20 text-red-400 border border-red-500/30';
+        badge.textContent = `Time's Up! • 0 Points`;
+        cardSurface.className = 'bg-zinc-900/90 border-2 border-red-500/50 rounded-3xl overflow-hidden shadow-2xl transition-colors duration-300';
+        glow.className = 'absolute inset-0 bg-red-500/15 blur-2xl rounded-full transition-colors duration-300';
+      }
+
+      state.dailyRoundResults.push({
+        category: state.currentStatCategory,
+        userGuess: hasValidTypedGuess ? roundedGuess : null,
+        actualStat: target,
+        points,
+        diff,
+        timedOut: true
+      });
+      saveDailyProgressRecord();
+
+      const nextContainer = document.getElementById('next-action-container');
+      const nextBtn = document.getElementById('next-action-btn');
+      const nextLabel = document.getElementById('next-action-label');
+
+      if (state.dailyRoundIndex + 1 < DAILY_ROUND_SEQUENCE.length) {
+        const nextCat = DAILY_ROUND_SEQUENCE[state.dailyRoundIndex + 1];
+        nextLabel.textContent = `Next: ${nextCat} (${state.dailyRoundIndex + 2}/3)`;
+      } else {
+        nextLabel.textContent = 'View Combined Score';
+      }
+
+      nextContainer.classList.remove('hidden');
+      nextBtn.focus();
+    }
 
     /**
      * Deterministic Seeded PRNG (Hash + Mulberry32)
@@ -1094,10 +1252,6 @@
     /**
      * Stat-Scaled Scoring Formula:
      * 20 Points == 6 Rebounds == 4 Assists
-     * - Points error multiplier:   1.0x  (<= 3.0 off scores; 0.0 = 100, 3.0 = 10, > 3.0 = 0)
-     * - Rebounds error multiplier: 20/6  (<= 0.9 off scores; 0.0 = 100, 0.9 = 10, > 0.9 = 0)
-     * - Assists error multiplier:  20/4  (<= 0.6 off scores; 0.0 = 100, 0.6 = 10, > 0.6 = 0)
-     * Max score = 100 for all three; lowest non-zero score = 10 for all three.
      */
     function calculateStatheadPoints(roundedGuess, actualStat, statCategory) {
       const target = Math.round(actualStat * 10) / 10;
@@ -1372,6 +1526,7 @@
      * Display Completed Daily Stathead Screen (Combined 3-Round Score)
      */
     function showDailyCompletedScreen(record, justFinished = false) {
+      stopDailyCategoryTimer();
       document.getElementById('daily-start-screen').classList.add('hidden');
       document.getElementById('card-surface').classList.add('hidden');
       document.getElementById('daily-gameover-screen').classList.remove('hidden');
@@ -1402,13 +1557,16 @@
         roundsListEl.innerHTML = '';
         for (const r of record.rounds) {
           const abbr = STAT_META[r.category]?.abbr || r.category;
+          const userGuessLabel = (r.userGuess !== null && r.userGuess !== undefined)
+            ? Number(r.userGuess).toFixed(1)
+            : 'Time Up';
           const cell = document.createElement('div');
           cell.className = 'bg-zinc-900/90 border border-zinc-800 rounded-xl p-2';
           cell.innerHTML = `
             <div class="text-[10px] font-extrabold uppercase tracking-wider text-orange-400">${escapeHtml(abbr)}</div>
             <div class="text-xs font-black text-emerald-400 mt-0.5">+${r.points} pts</div>
             <div class="text-[11px] text-zinc-400 mt-0.5 tabular-nums">
-              ${Number(r.userGuess).toFixed(1)} vs <span class="text-white font-semibold">${Number(r.actualStat).toFixed(1)}</span>
+              ${userGuessLabel} vs <span class="text-white font-semibold">${Number(r.actualStat).toFixed(1)}</span>
             </div>
           `;
           roundsListEl.appendChild(cell);
@@ -1424,6 +1582,7 @@
      * Switch Between 'daily' and 'infinite'
      */
     function setGameMode(mode) {
+      stopDailyCategoryTimer();
       state.gameMode = mode;
 
       const dailyBtn = document.getElementById('mode-daily-btn');
@@ -1438,6 +1597,7 @@
       const dailyStart = document.getElementById('daily-start-screen');
       const dailyOver = document.getElementById('daily-gameover-screen');
       const cardSurface = document.getElementById('card-surface');
+      const timerContainer = document.getElementById('daily-timer-bar-container');
 
       if (mode === 'daily') {
         const existingRecord = getDailyCompletionRecord();
@@ -1466,6 +1626,7 @@
         dailyOver.classList.add('hidden');
         cardSurface.classList.add('hidden');
       } else {
+        if (timerContainer) timerContainer.classList.add('hidden');
         dailyStart.classList.add('hidden');
         dailyOver.classList.add('hidden');
         cardSurface.classList.remove('hidden');
@@ -1496,6 +1657,7 @@
       const category = DAILY_ROUND_SEQUENCE[roundIdx];
       const badgeLabel = `Daily Starter • Round ${roundIdx + 1}/3`;
       renderPlayerStatRound(state.dailyStarter, category, state.dailyStarterStats, badgeLabel);
+      startDailyCategoryTimer();
     }
 
     /**
@@ -1564,6 +1726,10 @@
      * Pick and Verify Next Player for Infinite Mode (2026-27 Season Only)
      */
     async function nextInfiniteRound() {
+      stopDailyCategoryTimer();
+      const timerContainer = document.getElementById('daily-timer-bar-container');
+      if (timerContainer) timerContainer.classList.add('hidden');
+
       const reqToken = ++state.roundRequestToken;
 
       const inputEl = document.getElementById('stat-input');
@@ -1623,6 +1789,7 @@
      * Finalize 3-Round Daily Challenge, Sum Combined Score, and Post to Global Leaderboard
      */
     async function finalizeDailyChallenge() {
+      stopDailyCategoryTimer();
       const existingRecord = getDailyCompletionRecord();
       if (existingRecord) {
         showDailyCompletedScreen(existingRecord, false);
@@ -1665,6 +1832,11 @@
       state.currentVerifiedStat = verifiedStats[statInfo.key];
       state.currentVerifiedGp = verifiedStats.gp;
       state.roundAnswered = false;
+
+      if (state.gameMode !== 'daily') {
+        const timerContainer = document.getElementById('daily-timer-bar-container');
+        if (timerContainer) timerContainer.classList.add('hidden');
+      }
 
       document.getElementById('roster-mode-badge').textContent = badgeLabel;
       document.getElementById('player-name-heading').textContent = player.fullName;
@@ -1747,6 +1919,7 @@
         return;
       }
 
+      stopDailyCategoryTimer();
       feedbackEl.classList.add('hidden');
       const roundedGuess = Math.round(parsedNum * 10) / 10;
 
@@ -1835,6 +2008,7 @@
      * Initialize / Boot Stathead
      */
     async function initGame() {
+      stopDailyCategoryTimer();
       const sessionId = ++state.loadSessionId;
       state.players = [];
       state.playerMap.clear();
