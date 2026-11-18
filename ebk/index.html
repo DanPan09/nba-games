@@ -138,6 +138,7 @@
           </span>
           <span class="tracking-wide">Imposter</span>
         </a>
+
         <!-- Stathead Tab -->
         <a
           href="/nba-games/stathead/"
@@ -169,8 +170,9 @@
     <main class="flex-1 w-full max-w-2xl mx-auto px-4 py-6 sm:py-8 flex flex-col items-center justify-center">
 
       <!-- Loading Screen State -->
-      <div id="loading-screen" class="w-full py-20 flex flex-col items-center justify-center text-center">
+      <div id="loading-screen" class="w-full py-20 flex flex-col items-center justify-center text-center gap-3">
         <div class="w-10 h-10 rounded-full border-4 border-zinc-800 border-t-orange-500 animate-spin" role="status" aria-label="Loading"></div>
+        <p id="loading-status-text" class="text-xs font-semibold text-zinc-400">Syncing live 2026-27 NBA players &amp; ESPN stat logs...</p>
       </div>
 
       <!-- Error / Retry Screen State (with Diagnostics + Custom JSON Importer) -->
@@ -258,7 +260,7 @@
         <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
           <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">10-Second Daily Gauntlet</h2>
           <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
-            Name as many current NBA players in a row as possible. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
+            Name as many 2026–27 rotation players (&gt;8 MPG, 1+ GP) in a row as possible. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
           </p>
 
           <div class="max-w-xs mx-auto mb-5">
@@ -471,13 +473,21 @@
 
       <!-- Footer -->
       <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
-        <span id="footer-source-text">Live NBA roster &amp; headshot data powered dynamically via ESPN &amp; Wikipedia APIs.</span>
+        <span id="footer-source-text">Official 2026-27 NBA Regular Season ESPN logs verified prior to today's slate (&gt;8.0 MPG, 1+ GP).</span>
       </footer>
 
     </div>
   </div>
 
   <script>
+    /**
+     * 2026-27 NBA Regular Season Constants (Matches Stathead ESPN Core v2 Pipeline)
+     */
+    const NBA_SEASON_YEAR = 2027;
+    const NBA_SEASON_LABEL = '2026-27';
+    const NBA_REGULAR_SEASON_TYPE = 2;
+    const MIN_QUALIFYING_MPG = 8; // Strictly > 8.0 MPG and >= 1 GP
+
     /**
      * Global Leaderboard Configuration (Supabase / REST)
      */
@@ -534,16 +544,28 @@
      * Global Game State
      */
     const state = {
-      players: [],             // All active live NBA players
-      playerMap: new Map(),    // Deduplicated player registry keyed by canonical ID
+      players: [],                   // All active live NBA players
+      playerMap: new Map(),          // Deduplicated player registry keyed by canonical ID
+      teamCache: new Map(),          // team $ref -> { displayName, abbreviation }
+      verifiedStatsCache: new Map(), // espnId -> { gp, gs, mpg, rawMpg, pts, reb, ast }
+      invalidPlayerIds: new Set(),   // Players with <1 GP or <=8.0 MPG in 2026-27 regular season
       brokenImageIds: new Set(),
-      dailySeedPool: [],       // Deterministic daily seed of unique active players
-      usedDailyIds: new Set(), // Guarantees zero duplicate players during a Daily Gauntlet run
-      mpgSyncComplete: false,  // True once full 30-team roster sync finishes
+
+      todayDateKey: '',              // YYYY-MM-DD in America/New_York
+      todayEventIds: new Set(),      // ESPN event IDs scheduled/live/finished today
+
+      dailySeedPool: [],             // Deterministic daily seed of active players
+      dailySeedCursor: 0,            // Current index into dailySeedPool for deterministic verification
+      verifiedDailyQueue: [],        // Ordered queue of verified (>8 MPG, 1+ GP) daily players
+      dailyQueuePromise: null,       // Single-flight promise for deterministic daily verification
+      usedDailyIds: new Set(),       // Guarantees zero duplicate players during a Daily Gauntlet run
+      mpgSyncComplete: false,        // True once full roster sync finishes
       usedInfiniteIds: new Set(),
+
       currentPlayer: null,
-      imageRequestToken: 0,    // Guards against stale image onload race conditions
-      gameMode: 'daily',       // 'daily' (Daily Gauntlet) | 'infinite' (Infinite)
+      imageRequestToken: 0,          // Guards against stale image onload race conditions
+      roundRequestToken: 0,          // Guards against stale async Infinite round verification
+      gameMode: 'daily',             // 'daily' (Daily Gauntlet) | 'infinite' (Infinite)
       roundNumber: 0,
       roundAnswered: false,
       wrongAttempts: 0,
@@ -568,11 +590,22 @@
       dailyRafId: null
     };
 
-    // Live API Endpoints
+    // Live API Endpoints (2026-27 NBA Regular Season Locked — Identical to Stathead)
     const ESPN_TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams?limit=50';
     const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?enable=stats`;
     const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
+    const ESPN_CORE_EVENTS_URL = (yyyymmdd) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events?dates=${yyyymmdd}`;
+
+    const ESPN_CORE_SEASON_STATS_URL = (athleteId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`;
+    const ESPN_CORE_SEASON_EVENTLOG_URL = (athleteId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}/eventlog?limit=15`;
+
     const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
+
+    function toHttps(url) {
+      return String(url || '').replace(/^http:\/\//i, 'https://');
+    }
 
     /**
      * Infinite Streak Persistence & UI Sync
@@ -641,16 +674,17 @@
           if (p.type !== 'literal') map[p.type] = p.value;
         }
         const dateKey = `${map.year}-${map.month}-${map.day}`;
+        const compactKey = `${map.year}${map.month}${map.day}`;
         const h = parseInt(map.hour, 10) % 24;
         const m = parseInt(map.minute, 10);
         const s = parseInt(map.second, 10);
         const elapsedTodaySec = h * 3600 + m * 60 + s;
         const remainingSec = Math.max(0, 86400 - elapsedTodaySec);
-        return { dateKey, remainingSec };
+        return { dateKey, compactKey, remainingSec };
       } catch (_) {
         const utcDate = now.toISOString().slice(0, 10);
         const elapsed = now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
-        return { dateKey: utcDate, remainingSec: Math.max(0, 86400 - elapsed) };
+        return { dateKey: utcDate, compactKey: utcDate.replace(/-/g, ''), remainingSec: Math.max(0, 86400 - elapsed) };
       }
     }
 
@@ -704,10 +738,12 @@
     }
 
     /**
-     * Build the deterministic Daily Gauntlet Pool for today's EST date
+     * Build the deterministic Daily Gauntlet Seed Pool for today's EST date
      */
     function rebuildDailySeedPool() {
-      const validPlayers = state.players.filter(p => !state.brokenImageIds.has(p.id));
+      const validPlayers = state.players.filter(
+        p => !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(p.espnId || p.id)
+      );
 
       // Deduplicate by both canonical ID and normalized full name so no player ever appears twice
       const seenKeys = new Set();
@@ -733,10 +769,62 @@
       }
 
       state.dailySeedPool = canonical;
+      state.dailySeedCursor = 0;
+      state.verifiedDailyQueue = [];
+      state.dailyQueuePromise = null;
 
       const badgeEl = document.getElementById('roster-mode-badge');
       if (badgeEl && state.gameMode === 'daily') {
         badgeEl.textContent = 'Daily Gauntlet';
+      }
+    }
+
+    /**
+     * Deterministically verify upcoming players in Daily Gauntlet using Stathead's
+     * exact ESPN Core v2 verification method (gp >= 1 && rawMpg > 8)
+     */
+    async function ensureDailyQueueAhead(minTargetLength) {
+      if (state.verifiedDailyQueue.length >= minTargetLength) return;
+      if (state.dailySeedCursor >= state.dailySeedPool.length) return;
+
+      if (state.dailyQueuePromise) {
+        await state.dailyQueuePromise;
+        if (state.verifiedDailyQueue.length >= minTargetLength || state.dailySeedCursor >= state.dailySeedPool.length) {
+          return;
+        }
+      }
+
+      const runner = (async () => {
+        const batchSize = 6;
+        while (
+          state.verifiedDailyQueue.length < minTargetLength &&
+          state.dailySeedCursor < state.dailySeedPool.length
+        ) {
+          const batch = state.dailySeedPool.slice(state.dailySeedCursor, state.dailySeedCursor + batchSize);
+          state.dailySeedCursor += batch.length;
+
+          const statsResults = await Promise.all(
+            batch.map(candidate => getVerifiedPreTodayStats(candidate))
+          );
+
+          // Push qualifying players in exact deterministic batch order
+          for (let i = 0; i < batch.length; i++) {
+            const candidate = batch[i];
+            const stats = statsResults[i];
+            if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+              state.verifiedDailyQueue.push(candidate);
+            }
+          }
+        }
+      })();
+
+      state.dailyQueuePromise = runner;
+      try {
+        await runner;
+      } finally {
+        if (state.dailyQueuePromise === runner) {
+          state.dailyQueuePromise = null;
+        }
       }
     }
 
@@ -925,7 +1013,7 @@
     /**
      * Fetch JSON with strict AbortController timeout and detailed error reporting
      */
-    async function fetchJsonStrict(url, timeoutMs = 5500) {
+    async function fetchJsonStrict(url, timeoutMs = 6500) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -992,28 +1080,177 @@
     }
 
     /**
-     * Extract MPG directly from an athlete object if ESPN roster?enable=stats includes it
+     * Extract Stat Map from ESPN Core v2 Statistics Payload (Same as Stathead)
      */
-    function extractAthleteInlineMpg(athlete) {
-      const cats = athlete?.statistics?.splits?.categories || athlete?.statsSummary?.statistics || [];
-      if (!Array.isArray(cats)) return null;
-
-      for (const c of cats) {
-        if (/^(min|mpg|minutes|avgMinutes)$/i.test(String(c?.name || c?.abbreviation || '').trim())) {
-          const v = parseFloat(String(c.value ?? c.displayValue ?? ''));
-          if (!Number.isNaN(v)) return v;
-        }
-        if (Array.isArray(c?.stats)) {
-          const minObj = c.stats.find(s =>
-            /^(min|mpg|minutes|avgMinutes)$/i.test(String(s?.name || s?.abbreviation || '').trim())
-          );
-          if (minObj) {
-            const v = parseFloat(String(minObj.value ?? minObj.displayValue ?? ''));
-            if (!Number.isNaN(v)) return v;
+    function parseCoreStatsCategories(statsPayload) {
+      const map = {};
+      const cats = statsPayload?.splits?.categories || [];
+      for (const cat of cats) {
+        const stats = Array.isArray(cat?.stats) ? cat.stats : [];
+        for (const s of stats) {
+          if (s && s.name && s.value !== undefined) {
+            const v = Number(s.value);
+            if (!Number.isNaN(v)) {
+              map[s.name] = v;
+            }
           }
         }
       }
-      return null;
+      return map;
+    }
+
+    /**
+     * Resolve Player's 2026-27 Team Info from ESPN Core v2 Team Reference (Same as Stathead)
+     */
+    async function hydratePlayerTeamAbbr(player, teamRef) {
+      if (!teamRef || (player.teamAbbr && player.teamAbbr !== 'NBA')) return;
+      const secureRef = toHttps(teamRef);
+      if (state.teamCache.has(secureRef)) {
+        const cached = state.teamCache.get(secureRef);
+        player.teamName = cached.displayName;
+        player.teamAbbr = cached.abbreviation;
+        return;
+      }
+      try {
+        const teamData = await fetchJsonStrict(secureRef, 4500);
+        const info = {
+          displayName: teamData?.displayName || teamData?.name || 'NBA',
+          abbreviation: teamData?.abbreviation || 'NBA'
+        };
+        state.teamCache.set(secureRef, info);
+        player.teamName = info.displayName;
+        player.teamAbbr = info.abbreviation;
+      } catch (_) {}
+    }
+
+    /**
+     * Fetch Today's NBA Events from CORS-Open ESPN Core v2 (Same as Stathead)
+     */
+    async function fetchTodayEventsCore() {
+      const { dateKey, compactKey } = getEstDateInfo();
+      state.todayDateKey = dateKey;
+      state.todayEventIds.clear();
+
+      try {
+        const data = await fetchJsonStrict(ESPN_CORE_EVENTS_URL(compactKey), 5000);
+        const items = Array.isArray(data?.items) ? data.items : [];
+        for (const item of items) {
+          const match = String(item?.$ref || '').match(/\/events\/(\d+)/);
+          if (match) state.todayEventIds.add(match[1]);
+        }
+      } catch (_) {}
+    }
+
+    /**
+     * STRICT 2026-27 NBA REGULAR SEASON VERIFICATION ENGINE (Same method as Stathead):
+     * Queries `seasons/2027/types/2/athletes/{id}/statistics` and `seasons/2027/athletes/{id}/eventlog`,
+     * excludes any game played TODAY in EST, and verifies that the player has:
+     *   1) Played at least 1 game this season prior to today (`preTodayGp >= 1`), AND
+     *   2) Averaged more than 8 minutes per game (`rawMpg > 8`).
+     */
+    async function getVerifiedPreTodayStats(player) {
+      if (!player) return null;
+
+      // Support manually imported JSON players that carry explicit mpg & no numeric ESPN ID
+      if (!player.espnId || !/^\d+$/.test(player.espnId)) {
+        if (typeof player.mpg === 'number' && player.mpg > MIN_QUALIFYING_MPG) {
+          return { gp: 1, gs: 0, mpg: player.mpg, rawMpg: player.mpg };
+        }
+        return null;
+      }
+
+      const aid = String(player.espnId);
+
+      if (state.verifiedStatsCache.has(aid)) {
+        return state.verifiedStatsCache.get(aid);
+      }
+      if (state.invalidPlayerIds.has(aid)) {
+        return null;
+      }
+
+      try {
+        const [statsData, logData] = await Promise.all([
+          fetchJsonStrict(ESPN_CORE_SEASON_STATS_URL(aid), 6000),
+          fetchJsonStrict(ESPN_CORE_SEASON_EVENTLOG_URL(aid), 6000).catch(() => null)
+        ]);
+
+        // Double-verify that ESPN returned the 2026-27 season (seasons/2027)
+        const seasonRef = String(statsData?.season?.$ref || '');
+        if (seasonRef && !seasonRef.includes(`/seasons/${NBA_SEASON_YEAR}`)) {
+          state.invalidPlayerIds.add(aid);
+          return null;
+        }
+
+        const sMap = parseCoreStatsCategories(statsData);
+        const gp = sMap.gamesPlayed || 0;
+        const gs = sMap.gamesStarted || 0;
+
+        // Must have played at least 1 game in the 2026-27 NBA Regular Season
+        if (gp < 1) {
+          state.invalidPlayerIds.add(aid);
+          return null;
+        }
+
+        let totalMin = sMap.minutes ?? ((sMap.avgMinutes || 0) * gp);
+        let totalPts = sMap.points ?? ((sMap.avgPoints || 0) * gp);
+        let totalReb = sMap.rebounds ?? ((sMap.avgRebounds || 0) * gp);
+        let totalAst = sMap.assists ?? ((sMap.avgAssists || 0) * gp);
+        let preTodayGp = gp;
+
+        // Subtract any played/live game in today's EST slate from 2026-27 season totals
+        const logItems = Array.isArray(logData?.events?.items) ? logData.events.items : [];
+        for (const item of logItems) {
+          if (!item || item.played !== true) continue;
+          const evMatch = String(item?.event?.$ref || '').match(/\/events\/(\d+)/);
+          const evId = evMatch ? evMatch[1] : '';
+          if (evId && state.todayEventIds.has(evId) && item.statistics?.$ref) {
+            try {
+              const gameStatPayload = await fetchJsonStrict(toHttps(item.statistics.$ref), 5000);
+              const gMap = parseCoreStatsCategories(gameStatPayload);
+              if (preTodayGp > 1) {
+                preTodayGp -= 1;
+                totalMin = Math.max(0, totalMin - (gMap.minutes || 0));
+                totalPts = Math.max(0, totalPts - (gMap.points || 0));
+                totalReb = Math.max(0, totalReb - (gMap.rebounds || 0));
+                totalAst = Math.max(0, totalAst - (gMap.assists || 0));
+              } else {
+                // Player's only 2026-27 game was played today -> 0 games prior to today
+                state.invalidPlayerIds.add(aid);
+                return null;
+              }
+            } catch (_) {}
+          }
+        }
+
+        const rawMpg = totalMin / preTodayGp;
+
+        // Require >= 1 game played AND strictly > 8.0 minutes per game
+        if (preTodayGp < 1 || !(rawMpg > MIN_QUALIFYING_MPG)) {
+          state.invalidPlayerIds.add(aid);
+          return null;
+        }
+
+        await hydratePlayerTeamAbbr(player, statsData?.team?.$ref);
+
+        const mpg = Math.round(rawMpg * 10) / 10;
+        player.mpg = mpg;
+
+        const result = {
+          gp: preTodayGp,
+          gs,
+          mpg,
+          rawMpg,
+          pts: Math.round((totalPts / preTodayGp) * 10) / 10,
+          reb: Math.round((totalReb / preTodayGp) * 10) / 10,
+          ast: Math.round((totalAst / preTodayGp) * 10) / 10
+        };
+
+        state.verifiedStatsCache.set(aid, result);
+        return result;
+      } catch (_) {
+        state.invalidPlayerIds.add(aid);
+        return null;
+      }
     }
 
     /**
@@ -1070,14 +1307,14 @@
 
         const footerEl = document.getElementById('footer-source-text');
         if (footerEl) {
-          footerEl.textContent = `Live NBA roster & headshot data streamed dynamically via ${sourceLabel}.`;
+          footerEl.textContent = `Official ${NBA_SEASON_LABEL} NBA Regular Season ESPN logs verified prior to today via ${sourceLabel} (>8.0 MPG, 1+ GP).`;
         }
       }
       return changed;
     }
 
     /**
-     * Transition into active gameplay once the full 30-team pool is ready
+     * Transition into active gameplay once the roster pool is ready
      */
     function launchGameImmediately(sessionId) {
       if (sessionId !== state.loadSessionId || state.gameStarted) return;
@@ -1153,7 +1390,6 @@
                 .filter(a => a && a.id && (a.displayName || a.fullName))
                 .map(a => {
                   const aid = String(a.id);
-                  const inlineMpg = extractAthleteInlineMpg(a);
                   const exactEspnHeadshot = `https://a.espncdn.com/i/headshots/nba/players/full/${aid}.png`;
                   return {
                     id: `espn_${aid}`,
@@ -1167,7 +1403,7 @@
                     position: a.position?.abbreviation || a.position?.name || 'NBA',
                     headshot: a.headshot?.href || exactEspnHeadshot,
                     fallbackHeadshot: `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${aid}.png&w=350&h=254`,
-                    mpg: inlineMpg
+                    mpg: null
                   };
                 });
 
@@ -1194,8 +1430,10 @@
      */
     async function fetchSourceB_EspnCoreAthletes(sessionId) {
       logDiag('Source B: Fetching active NBA athletes via ESPN Core V3 (single request)...', 'warn');
+      const statusEl = document.getElementById('loading-status-text');
+      if (statusEl) statusEl.textContent = `Syncing active ${NBA_SEASON_LABEL} NBA athletes via ESPN Core V3...`;
 
-      const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 6500);
+      const data = await fetchJsonStrict(ESPN_CORE_ATHLETES_URL, 7000);
       if (sessionId !== state.loadSessionId) return;
 
       const items = Array.isArray(data?.items) ? data.items : [];
@@ -1279,6 +1517,8 @@
      */
     async function fetchLiveNbaPlayers(sessionId) {
       state.sourceErrors = [];
+      await fetchTodayEventsCore();
+      if (sessionId !== state.loadSessionId) return;
 
       try {
         await fetchSourceA_EspnRosters(sessionId);
@@ -1425,8 +1665,14 @@
       state.gameStarted = false;
       state.players = [];
       state.playerMap.clear();
+      state.teamCache.clear();
+      state.verifiedStatsCache.clear();
+      state.invalidPlayerIds.clear();
       state.brokenImageIds.clear();
       state.dailySeedPool = [];
+      state.dailySeedCursor = 0;
+      state.verifiedDailyQueue = [];
+      state.dailyQueuePromise = null;
       state.usedDailyIds.clear();
       state.mpgSyncComplete = false;
       state.usedInfiniteIds.clear();
@@ -1509,7 +1755,9 @@
         if (infiniteStreakBar) infiniteStreakBar.classList.add('hidden');
 
         state.dailyRunning = false;
-        rebuildDailySeedPool();
+        if (state.dailySeedPool.length === 0) {
+          rebuildDailySeedPool();
+        }
 
         // Enforce once-per-day device completion check
         const existingRecord = getDailyCompletionRecord();
@@ -1549,10 +1797,10 @@
 
     /**
      * =========================================================================
-     * DAILY GAUNTLET (10-SECOND SHOT CLOCK + NO DUPLICATES)
+     * DAILY GAUNTLET (10-SECOND SHOT CLOCK + VERIFIED >8 MPG & 1+ GP)
      * =========================================================================
      */
-    function startDailyGauntlet() {
+    async function startDailyGauntlet() {
       const existingRecord = getDailyCompletionRecord();
       if (existingRecord) {
         showDailyCompletedScreen(existingRecord, false);
@@ -1580,6 +1828,21 @@
       rebuildDailySeedPool();
       if (state.dailySeedPool.length === 0) return;
 
+      const startBtn = document.getElementById('start-daily-btn');
+      const origBtnHtml = startBtn ? startBtn.innerHTML : '';
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = `Verifying ${NBA_SEASON_LABEL} Players...`;
+      }
+
+      // Pre-verify first 12 deterministic qualifying players (>8 MPG, 1+ GP) before starting the clock
+      await ensureDailyQueueAhead(12);
+
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = origBtnHtml;
+      }
+
       state.playerName = enteredName;
       safeSetStorage('ebk_player_name', enteredName);
 
@@ -1597,35 +1860,54 @@
       document.getElementById('roster-mode-badge').textContent = 'Daily Gauntlet';
       document.getElementById('give-up-btn').classList.add('hidden');
 
-      if (loadDailyPlayer(0)) {
+      const loaded = await loadDailyPlayer(0);
+      if (loaded && state.dailyRunning) {
         resetAndStartDailyTimer();
       }
     }
 
-    function loadDailyPlayer(startIndex) {
+    async function loadDailyPlayer(startIndex) {
       if (state.dailySeedPool.length === 0) return false;
 
-      // Advance forward until we find a player that has NOT been shown yet in this run
-      let candidateIdx = startIndex;
-      let chosenPlayer = null;
-      while (candidateIdx < state.dailySeedPool.length) {
-        const candidate = state.dailySeedPool[candidateIdx];
-        const uniqueKey = `${candidate.espnId || candidate.id}|${normalizeName(candidate.fullName)}`;
-        if (
-          candidate &&
-          !state.brokenImageIds.has(candidate.id) &&
-          !state.usedDailyIds.has(uniqueKey)
-        ) {
-          chosenPlayer = candidate;
-          state.usedDailyIds.add(uniqueKey);
-          break;
-        }
-        candidateIdx++;
+      // Ensure at least startIndex + 1 verified qualifying players are buffered
+      if (state.verifiedDailyQueue.length <= startIndex && state.dailySeedCursor < state.dailySeedPool.length) {
+        stopDailyTimer();
+        await ensureDailyQueueAhead(startIndex + 8);
       }
 
-      // If every single player in today's pool has been named without duplicates, finish cleanly!
+      // Advance forward until we find a verified player (>8 MPG, 1+ GP) not yet shown in this run
+      let candidateIdx = startIndex;
+      let chosenPlayer = null;
+
+      while (true) {
+        while (candidateIdx < state.verifiedDailyQueue.length) {
+          const candidate = state.verifiedDailyQueue[candidateIdx];
+          const uniqueKey = `${candidate.espnId || candidate.id}|${normalizeName(candidate.fullName)}`;
+          if (
+            candidate &&
+            !state.brokenImageIds.has(candidate.id) &&
+            !state.usedDailyIds.has(uniqueKey)
+          ) {
+            chosenPlayer = candidate;
+            state.usedDailyIds.add(uniqueKey);
+            break;
+          }
+          candidateIdx++;
+        }
+
+        if (chosenPlayer) break;
+
+        if (state.dailySeedCursor < state.dailySeedPool.length) {
+          stopDailyTimer();
+          await ensureDailyQueueAhead(candidateIdx + 8);
+        } else {
+          break;
+        }
+      }
+
+      // If every qualifying player in today's pool has been named without duplicates, finish cleanly
       if (!chosenPlayer) {
-        handleDailyPoolCleared();
+        await handleDailyPoolCleared();
         return false;
       }
 
@@ -1636,6 +1918,9 @@
       state.wrongAttempts = 0;
 
       preparePlayerCardUI();
+
+      // Pre-buffer upcoming deterministic players in the background so next guesses are instant
+      ensureDailyQueueAhead(candidateIdx + 12).catch(() => {});
       return true;
     }
 
@@ -1753,33 +2038,96 @@
 
     /**
      * =========================================================================
-     * INFINITE MODE & SHARED CARD UI
+     * INFINITE MODE (VERIFIED >8 MPG & 1+ GP) & SHARED CARD UI
      * =========================================================================
      */
-    function pickRandomInfinitePlayer() {
-      const validPool = state.players.filter(p => !state.brokenImageIds.has(p.id));
-      if (validPool.length === 0) return null;
+    function getEligibleInfiniteCandidates() {
+      return state.players.filter(
+        p => !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(p.espnId || p.id)
+      );
+    }
+
+    /**
+     * Background pre-warmer so subsequent Infinite Mode rounds verify instantaneously
+     */
+    async function prewarmInfiniteCandidates(count = 2) {
+      const validPool = getEligibleInfiniteCandidates();
+      const unseen = validPool.filter(p => !state.usedInfiniteIds.has(p.id) && !state.verifiedStatsCache.has(p.espnId));
+      if (!unseen.length) return;
+
+      let warmed = 0;
+      const shuffled = [...unseen].sort(() => Math.random() - 0.5);
+      for (const cand of shuffled) {
+        if (warmed >= count || state.gameMode !== 'infinite') break;
+        const stats = await getVerifiedPreTodayStats(cand);
+        if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+          warmed++;
+        }
+      }
+    }
+
+    async function nextRound() {
+      const reqToken = ++state.roundRequestToken;
+
+      const inputEl = document.getElementById('player-input');
+      const submitBtn = document.getElementById('submit-guess-btn');
+      const giveUpBtn = document.getElementById('give-up-btn');
+      const feedbackEl = document.getElementById('inline-feedback');
+      const imgEl = document.getElementById('player-headshot');
+      const skeletonEl = document.getElementById('img-skeleton');
+
+      inputEl.disabled = true;
+      submitBtn.disabled = true;
+      giveUpBtn.classList.add('hidden');
+      document.getElementById('reveal-banner').classList.add('hidden');
+      document.getElementById('next-action-container').classList.add('hidden');
+
+      imgEl.classList.add('opacity-0', 'scale-95');
+      skeletonEl.classList.remove('hidden');
+      feedbackEl.className = 'font-semibold text-zinc-500';
+      feedbackEl.textContent = `Verifying ${NBA_SEASON_LABEL} rotation player (>8.0 MPG)...`;
+
+      let validPool = getEligibleInfiniteCandidates();
+      if (validPool.length === 0) return;
 
       if (state.usedInfiniteIds.size >= validPool.length) {
         state.usedInfiniteIds.clear();
       }
+
       const unseen = validPool.filter(p => !state.usedInfiniteIds.has(p.id));
-      const pool = unseen.length > 0 ? unseen : validPool;
-      const chosen = pool[Math.floor(Math.random() * pool.length)];
-      if (chosen) state.usedInfiniteIds.add(chosen.id);
-      return chosen;
-    }
+      const candidates = [...(unseen.length > 0 ? unseen : validPool)];
 
-    function nextRound() {
-      const nextPlayer = pickRandomInfinitePlayer();
-      if (!nextPlayer) return;
+      // Prioritize already-cached verified players first, then shuffle remaining candidates
+      const cachedReady = candidates.filter(c => state.verifiedStatsCache.has(c.espnId));
+      const unverified = candidates.filter(c => !state.verifiedStatsCache.has(c.espnId));
 
-      state.roundNumber++;
-      state.roundAnswered = false;
-      state.wrongAttempts = 0;
-      state.currentPlayer = nextPlayer;
+      for (let i = cachedReady.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cachedReady[i], cachedReady[j]] = [cachedReady[j], cachedReady[i]];
+      }
+      for (let i = unverified.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [unverified[i], unverified[j]] = [unverified[j], unverified[i]];
+      }
 
-      preparePlayerCardUI();
+      const orderedCandidates = [...cachedReady, ...unverified];
+
+      for (const candidate of orderedCandidates) {
+        const stats = await getVerifiedPreTodayStats(candidate);
+        if (reqToken !== state.roundRequestToken || state.gameMode !== 'infinite') return;
+
+        if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+          state.usedInfiniteIds.add(candidate.id);
+          state.roundNumber++;
+          state.roundAnswered = false;
+          state.wrongAttempts = 0;
+          state.currentPlayer = candidate;
+
+          preparePlayerCardUI();
+          prewarmInfiniteCandidates(2).catch(() => {});
+          return;
+        }
+      }
     }
 
     function preparePlayerCardUI() {
@@ -1834,7 +2182,7 @@
         skeletonEl.classList.add('hidden');
         imgEl.classList.remove('opacity-0', 'scale-95');
       };
-      imgEl.onerror = () => {
+      imgEl.onerror = async () => {
         if (reqToken !== state.imageRequestToken) return;
         if (!triedFallback && playerSnapshot.fallbackHeadshot && playerSnapshot.fallbackHeadshot !== imgEl.src) {
           triedFallback = true;
@@ -1842,9 +2190,12 @@
         } else {
           state.brokenImageIds.add(playerSnapshot.id);
           if (state.gameMode === 'daily' && state.dailyRunning) {
-            loadDailyPlayer(state.dailyIndex + 1);
+            const loaded = await loadDailyPlayer(state.dailyIndex + 1);
+            if (loaded && state.dailyRunning) {
+              resetAndStartDailyTimer();
+            }
             return;
-          } else if (state.gameMode === 'infinite' && state.players.length - state.brokenImageIds.size >= 4) {
+          } else if (state.gameMode === 'infinite' && getEligibleInfiniteCandidates().length >= 4) {
             state.roundNumber = Math.max(0, state.roundNumber - 1);
             nextRound();
             return;
@@ -2214,7 +2565,7 @@
     /**
      * Evaluate Typed Name Guess
      */
-    function handleTypedSubmit(e) {
+    async function handleTypedSubmit(e) {
       e.preventDefault();
       if (state.roundAnswered || !state.currentPlayer) return;
       if (state.gameMode === 'daily' && !state.dailyRunning) return;
@@ -2245,11 +2596,13 @@
       }
 
       if (state.gameMode === 'daily') {
+        stopDailyTimer();
         state.dailyScore++;
         document.getElementById('daily-live-score').textContent = String(state.dailyScore);
 
         const solvedName = state.currentPlayer.fullName;
-        if (loadDailyPlayer(state.dailyIndex + 1)) {
+        const loaded = await loadDailyPlayer(state.dailyIndex + 1);
+        if (loaded && state.dailyRunning) {
           resetAndStartDailyTimer();
           const updatedFeedback = document.getElementById('inline-feedback');
           updatedFeedback.className = 'font-bold text-emerald-400';
@@ -2264,7 +2617,7 @@
      * Reveal current player in Infinite Mode ("I don't know" button)
      */
     function skipPlayer() {
-      if (state.gameMode !== 'infinite' || state.roundAnswered) return;
+      if (state.gameMode !== 'infinite' || state.roundAnswered || !state.currentPlayer) return;
       finalizeInfiniteRound(false);
     }
 
