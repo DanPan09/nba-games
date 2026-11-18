@@ -554,6 +554,7 @@
       todayEventIds: new Set(),      // ESPN event IDs scheduled/live/finished today
 
       dailySeedPool: [],             // Deterministic daily seed of active players
+      dailySeedLockedMap: new Map(), // dateKey -> string[] of Supabase-locked ESPN player IDs
       dailySeedCursor: 0,            // Current index into dailySeedPool for deterministic verification
       verifiedDailyQueue: [],        // Ordered queue of verified (>8 MPG, 1+ GP) daily players
       dailyQueuePromise: null,       // Single-flight promise for deterministic daily verification
@@ -772,9 +773,121 @@
       state.verifiedDailyQueue = [];
       state.dailyQueuePromise = null;
 
+      if (state.dailySeedLockedMap && state.dailySeedLockedMap.has(dateKey)) {
+        applyLockedSeedOrder(state.dailySeedLockedMap.get(dateKey));
+      }
+
       const badgeEl = document.getElementById('roster-mode-badge');
       if (badgeEl && state.gameMode === 'daily') {
         badgeEl.textContent = 'Daily Gauntlet';
+      }
+    }
+
+    /**
+     * Shared Supabase Daily Seed Lock (ensures normal tabs, Incognito, and all devices
+     * play the exact same daily player order all day)
+     */
+    const DAILY_SEED_TABLE = 'ebk_daily_seeds';
+
+    function applyLockedSeedOrder(lockedIds) {
+      if (!Array.isArray(lockedIds) || lockedIds.length === 0) return;
+
+      const byEspnId = new Map();
+      for (const p of state.players) {
+        const key = String(p.espnId || p.id);
+        if (!byEspnId.has(key)) byEspnId.set(key, p);
+      }
+
+      const orderedPool = [];
+      const seen = new Set();
+
+      for (const rawId of lockedIds) {
+        const id = String(rawId);
+        const player = byEspnId.get(id);
+        if (player && !seen.has(id) && !state.brokenImageIds.has(player.id) && !state.invalidPlayerIds.has(id)) {
+          seen.add(id);
+          orderedPool.push(player);
+        }
+      }
+
+      for (const p of state.dailySeedPool) {
+        const id = String(p.espnId || p.id);
+        if (!seen.has(id) && !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(id)) {
+          seen.add(id);
+          orderedPool.push(p);
+        }
+      }
+
+      if (orderedPool.length > 0) {
+        state.dailySeedPool = orderedPool;
+        state.dailySeedCursor = 0;
+        state.verifiedDailyQueue = [];
+        state.dailyQueuePromise = null;
+      }
+    }
+
+    async function fetchRemoteDailySeed(dateKey) {
+      if (!isRemoteLeaderboardEnabled()) return null;
+      try {
+        const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
+        const url = `${base}/rest/v1/${DAILY_SEED_TABLE}?daily_date=eq.${encodeURIComponent(dateKey)}&select=player_ids&limit=1`;
+        const res = await fetch(url, {
+          headers: {
+            'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim(),
+            'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()}`
+          }
+        });
+        if (!res.ok) return null;
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0].player_ids)) {
+          return rows[0].player_ids.map(String);
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    async function lockRemoteDailySeed(dateKey, playerIds) {
+      if (!isRemoteLeaderboardEnabled() || !playerIds.length) return;
+      try {
+        const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
+        await fetch(`${base}/rest/v1/${DAILY_SEED_TABLE}?on_conflict=daily_date`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim(),
+            'Authorization': `Bearer ${GLOBAL_LEADERBOARD_CONFIG.supabaseAnonKey.trim()}`,
+            'Prefer': 'resolution=ignore-duplicates,return=minimal'
+          },
+          body: JSON.stringify({
+            daily_date: dateKey,
+            player_ids: playerIds
+          })
+        });
+      } catch (_) {}
+    }
+
+    async function syncDailySeedPoolWithSupabase() {
+      const { dateKey } = getEstDateInfo();
+
+      if (state.dailySeedLockedMap.has(dateKey)) {
+        applyLockedSeedOrder(state.dailySeedLockedMap.get(dateKey));
+        return;
+      }
+
+      let lockedIds = await fetchRemoteDailySeed(dateKey);
+
+      if (!lockedIds || lockedIds.length === 0) {
+        if (state.dailySeedPool.length === 0) {
+          rebuildDailySeedPool();
+        }
+        const candidateIds = state.dailySeedPool.map(p => String(p.espnId || p.id));
+        await lockRemoteDailySeed(dateKey, candidateIds);
+        lockedIds = (await fetchRemoteDailySeed(dateKey)) || candidateIds;
+      }
+
+      if (Array.isArray(lockedIds) && lockedIds.length > 0) {
+        state.dailySeedLockedMap.set(dateKey, lockedIds);
+        applyLockedSeedOrder(lockedIds);
       }
     }
 
@@ -1332,6 +1445,7 @@
 
       updateEstCountdowns();
       rebuildDailySeedPool();
+      syncDailySeedPoolWithSupabase().catch(() => {});
       setGameMode('daily');
     }
 
@@ -1833,6 +1947,9 @@
         startBtn.disabled = true;
         startBtn.textContent = `Verifying ${NBA_SEASON_LABEL} Players...`;
       }
+
+      // Sync & lock today's daily player order with Supabase before verifying the queue
+      await syncDailySeedPoolWithSupabase();
 
       // Pre-verify first 12 deterministic qualifying players (>8 MPG, 1+ GP) before starting the clock
       await ensureDailyQueueAhead(12);
