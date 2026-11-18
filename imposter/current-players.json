@@ -1,7 +1,7 @@
 [
   {
     "player": "LeBron James",
-    "hint": "None"
+    "hint": "Old"
   },
   {
     "player": "Stephen Curry",
@@ -9,7 +9,7 @@
   },
   {
     "player": "Kevin Durant",
-    "hint": "None"
+    "hint": "Old"
   },
     {
     "player": "Jayson Tatum",
@@ -107,11 +107,11 @@
     "player": "Joel Embiid",
     "hint": "Big"
   },
-    {
+  {
     "player": "Kon Knueppel",
     "hint": "Shooter"
   },
-    {
+  {
     "player": "Cooper Flagg",
     "hint": "None"
   },
@@ -123,7 +123,7 @@
     "player": "Dylan Harper",
     "hint": "None"
   },
-    {
+  {
     "player": "Pascal Siakam",
     "hint": "None"
   },
@@ -131,11 +131,11 @@
     "player": "Dyson Daniels",
     "hint": "Defense"
   },
-    {
+  {
     "player": "Jalen Brunson",
     "hint": "None"
   },
-    {
+  {
     "player": "Paul George",
     "hint": "Old"
   },
@@ -147,7 +147,7 @@
     "player": "Tyler Herro",
     "hint": "Shooter"
   },
-    {
+  {
     "player": "Luka Doncic",
     "hint": "None"
   },
@@ -155,11 +155,11 @@
     "player": "De'Aaron Fox",
     "hint": "None"
   },
-    {
+  {
     "player": "Damian Lillard",
     "hint": "Shooter"
   },
-    {
+  {
     "player": "Bam Adebayo",
     "hint": "Big"
   },
@@ -171,13 +171,157 @@
     "player": "Lamelo Ball",
     "hint": "Shooter"
   },
-    {
+  {
     "player": "Zion Williamson",
     "hint": "Big"
   },
   {
     "player": "Donovan Mitchell",
     "hint": "None"
+  },
+  {
+    "player": "Paolo Banchero",
+    "hint": "None"
+  },
+  {
+    "player": "Anthony Davis",
+    "hint": "Big"
+  },
+  {
+    "player": "Devin Booker",
+    "hint": "None"
+  },
+  {
+    "player": "AJ Dybansta",
+    "hint": "None"
+  },
+  {
+    "player": "Chet Holmgren",
+    "hint": "Defense"
+  },
+  {
+    "player": "Darius Acuff Jr.",
+    "hint": "None"
+  },
+  {
+    "player": "Shai Gilgeous-Alexander",
+    "hint": "None"
+  },
+  {
+    "player": "Jalen Williams",
+    "hint": "None"
+  },
+  {
+    "player": "Josh Giddey",
+    "hint": "Pass"
+  },
+  {
+    "player": "Ja Morant",
+    "hint": "Athletic"
+  },
+  {
+    "player": "Darius Garland",
+    "hint": "None"
+  },
+  {
+    "player": "Zach Lavine",
+    "hint": "None"
+  },
+  {
+    "player": "Lauri Markkanen",
+    "hint": "Shooter"
+  },
+  {
+    "player": "Jaren Jackson Jr.",
+    "hint": "Defense"
+  },
+  {
+    "player": "Michael Porter Jr.",
+    "hint": "Shooter"
+  },
+  {
+    "player": "Austin Reaves",
+    "hint": "None"
+  },
+  {
+    "player": "Jarrett Allen",
+    "hint": "Big"
+  },
+  {
+    "player": "Evan Mobley",
+    "hint": "Defense"
+  },
+  {
+    "player": "Demar DeRozan",
+    "hint": "Shooter"
+  },
+  {
+    "player": "VJ Edgecombe",
+    "hint": "None"
+  },
+  {
+    "player": "Norman Powell",
+    "hint": "Shooter"
+  },
+  {
+    "player": "Brandin Podziemski",
+    "hint": "None"
+  },
+  {
+    "player": "Desmond Bane",
+    "hint": "Shooter"
+  },
+  {
+    "player": "Derrick White",
+    "hint": "Defense"
+  },
+  {
+    "player": "Rudy Gobert",
+    "hint": "Defense"
+  },
+  {
+    "player": "Draymond Green",
+    "hint": "Defense"
+  },
+  {
+    "player": "Walker Kessler",
+    "hint": "Big"
+  },
+  {
+    "player": "Fred VanVleet",
+    "hint": "Shooter"
+  },
+  {
+    "player": "Deni Avdija",
+    "hint": "None"
+  },
+  {
+    "player": "Jimmy Butler III",
+    "hint": "None"
+  },
+  {
+    "player": "Julius Randle",
+    "hint": "Big"
+  },
+  {
+    "player": "Aaron Gordon",
+    "hint": "Athletic"
+  },
+  {
+    "player": "Brook Lopez",
+    "hint": "Big"
+  },
+  {
+    "player": "Kyle Kuzma",
+    "hint": "None"
+  },
+  {
+    "player": "Jordan Poole",
+    "hint": "None"
+  },
+  {
+    "player": "Ben Simmons",
+    "hint": "Pass"
   }
   
 ]
