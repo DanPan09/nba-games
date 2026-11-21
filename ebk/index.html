@@ -601,7 +601,43 @@
     const ESPN_CORE_SEASON_EVENTLOG_URL = (athleteId) =>
       `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/athletes/${athleteId}/eventlog?limit=15`;
 
-    const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Current_National_Basketball_Association_players&gcmnamespace=0&gcmlimit=150&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
+    const WIKI_BASE_API = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=incategory:%22National_Basketball_Association_players%22+NBA&gsrnamespace=0&gsrlimit=120&prop=pageimages|description&piprop=thumbnail&pithumbsize=500&format=json';
+    const ROSTER_CACHE_STORAGE_KEY = 'ebk_cached_nba_roster_v1';
+
+    function saveRosterToLocalCache(players) {
+      if (!Array.isArray(players) || players.length < 20) return;
+      try {
+        const slim = players.map(p => ({
+          id: p.id,
+          espnId: p.espnId,
+          fullName: p.fullName,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          headshot: p.headshot,
+          fallbackHeadshot: p.fallbackHeadshot,
+          jersey: p.jersey,
+          position: p.position,
+          teamName: p.teamName,
+          teamAbbr: p.teamAbbr,
+          mpg: p.mpg
+        }));
+        safeSetStorage(ROSTER_CACHE_STORAGE_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          players: slim
+        }));
+      } catch (_) {}
+    }
+
+    function loadRosterFromLocalCache() {
+      try {
+        const raw = safeGetStorage(ROSTER_CACHE_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed?.players) ? parsed.players : [];
+      } catch (_) {
+        return [];
+      }
+    }
 
     function toHttps(url) {
       return String(url || '').replace(/^http:\/\//i, 'https://');
@@ -784,13 +820,32 @@
     }
 
     /**
-     * Shared Supabase Daily Seed Lock (ensures normal tabs, Incognito, and all devices
-     * play the exact same daily player order all day)
+     * Shared Supabase Daily Seed Lock (stores full verified player objects in player_ids
+     * so every browser/device plays the exact same sequence even if an ESPN roster endpoint
+     * is slow or mid-maintenance)
      */
     const DAILY_SEED_TABLE = 'ebk_daily_seeds';
 
-    function applyLockedSeedOrder(lockedIds) {
-      if (!Array.isArray(lockedIds) || lockedIds.length === 0) return;
+    function serializeLockedSeedEntry(p) {
+      return {
+        id: String(p.id || `espn_${p.espnId}`),
+        espnId: String(p.espnId || p.id),
+        fullName: p.fullName,
+        firstName: p.firstName || (p.fullName || '').split(/\s+/)[0] || '',
+        lastName: p.lastName || (p.fullName || '').split(/\s+/).slice(1).join(' ') || '',
+        teamName: p.teamName || 'NBA',
+        teamAbbr: p.teamAbbr || 'NBA',
+        jersey: p.jersey || '?',
+        position: p.position || 'NBA',
+        headshot: p.headshot || `https://a.espncdn.com/i/headshots/nba/players/full/${p.espnId}.png`,
+        fallbackHeadshot: p.fallbackHeadshot || `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${p.espnId}.png&w=350&h=254`,
+        mpg: typeof p.mpg === 'number' ? p.mpg : 15.0,
+        preVerified: true
+      };
+    }
+
+    function applyLockedSeedOrder(lockedEntries) {
+      if (!Array.isArray(lockedEntries) || lockedEntries.length === 0) return;
 
       const byEspnId = new Map();
       for (const p of state.players) {
@@ -801,10 +856,38 @@
       const orderedPool = [];
       const seen = new Set();
 
-      for (const rawId of lockedIds) {
-        const id = String(rawId);
-        const player = byEspnId.get(id);
-        if (player && !seen.has(id) && !state.brokenImageIds.has(player.id) && !state.invalidPlayerIds.has(id)) {
+      for (const rawEntry of lockedEntries) {
+        const isObj = rawEntry && typeof rawEntry === 'object';
+        const id = String(isObj ? (rawEntry.espnId || rawEntry.id) : rawEntry);
+        if (!id || seen.has(id)) continue;
+
+        let player = byEspnId.get(id);
+        if (!player && isObj && rawEntry.fullName) {
+          const parts = rawEntry.fullName.trim().split(/\s+/);
+          player = {
+            id: String(rawEntry.id || `espn_${id}`),
+            espnId: id,
+            fullName: rawEntry.fullName.trim(),
+            firstName: rawEntry.firstName || parts[0],
+            lastName: rawEntry.lastName || parts.slice(1).join(' ') || parts[0],
+            headshot: rawEntry.headshot || `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`,
+            fallbackHeadshot: rawEntry.fallbackHeadshot || `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${id}.png&w=350&h=254`,
+            jersey: rawEntry.jersey || '?',
+            position: rawEntry.position || 'NBA',
+            teamName: rawEntry.teamName || 'NBA',
+            teamAbbr: rawEntry.teamAbbr || 'NBA',
+            mpg: typeof rawEntry.mpg === 'number' ? rawEntry.mpg : 15.0,
+            preVerified: Boolean(rawEntry.preVerified)
+          };
+          state.playerMap.set(player.id, player);
+          state.players.push(player);
+          byEspnId.set(id, player);
+        } else if (player && isObj && rawEntry.preVerified) {
+          player.preVerified = true;
+          if (typeof rawEntry.mpg === 'number') player.mpg = rawEntry.mpg;
+        }
+
+        if (player && !state.invalidPlayerIds.has(id)) {
           seen.add(id);
           orderedPool.push(player);
         }
@@ -812,7 +895,7 @@
 
       for (const p of state.dailySeedPool) {
         const id = String(p.espnId || p.id);
-        if (!seen.has(id) && !state.brokenImageIds.has(p.id) && !state.invalidPlayerIds.has(id)) {
+        if (!seen.has(id) && !state.invalidPlayerIds.has(id)) {
           seen.add(id);
           orderedPool.push(p);
         }
@@ -840,14 +923,14 @@
         if (!res.ok) return null;
         const rows = await res.json();
         if (Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0].player_ids)) {
-          return rows[0].player_ids.map(String);
+          return rows[0].player_ids;
         }
       } catch (_) {}
       return null;
     }
 
-    async function lockRemoteDailySeed(dateKey, playerIds) {
-      if (!isRemoteLeaderboardEnabled() || !playerIds.length) return;
+    async function lockRemoteDailySeed(dateKey, entries) {
+      if (!isRemoteLeaderboardEnabled() || !entries.length) return;
       try {
         const base = GLOBAL_LEADERBOARD_CONFIG.supabaseUrl.trim().replace(/\/$/, '');
         await fetch(`${base}/rest/v1/${DAILY_SEED_TABLE}?on_conflict=daily_date`, {
@@ -860,7 +943,7 @@
           },
           body: JSON.stringify({
             daily_date: dateKey,
-            player_ids: playerIds
+            player_ids: entries
           })
         });
       } catch (_) {}
@@ -874,20 +957,29 @@
         return;
       }
 
-      let lockedIds = await fetchRemoteDailySeed(dateKey);
+      let lockedEntries = await fetchRemoteDailySeed(dateKey);
 
-      if (!lockedIds || lockedIds.length === 0) {
+      if (!lockedEntries || lockedEntries.length === 0) {
         if (state.dailySeedPool.length === 0) {
           rebuildDailySeedPool();
         }
-        const candidateIds = state.dailySeedPool.map(p => String(p.espnId || p.id));
-        await lockRemoteDailySeed(dateKey, candidateIds);
-        lockedIds = (await fetchRemoteDailySeed(dateKey)) || candidateIds;
+        // Pre-verify the opening 35 qualifying players before locking so every device gets identical verified starters
+        await ensureDailyQueueAhead(35);
+        const verifiedFirst = [...state.verifiedDailyQueue];
+        const verifiedIds = new Set(verifiedFirst.map(p => String(p.espnId || p.id)));
+        const remainder = state.dailySeedPool.filter(p => !verifiedIds.has(String(p.espnId || p.id)));
+        const serializedEntries = [
+          ...verifiedFirst.map(serializeLockedSeedEntry),
+          ...remainder.map(p => ({ ...serializeLockedSeedEntry(p), preVerified: false }))
+        ];
+
+        await lockRemoteDailySeed(dateKey, serializedEntries);
+        lockedEntries = (await fetchRemoteDailySeed(dateKey)) || serializedEntries;
       }
 
-      if (Array.isArray(lockedIds) && lockedIds.length > 0) {
-        state.dailySeedLockedMap.set(dateKey, lockedIds);
-        applyLockedSeedOrder(lockedIds);
+      if (Array.isArray(lockedEntries) && lockedEntries.length > 0) {
+        state.dailySeedLockedMap.set(dateKey, lockedEntries);
+        applyLockedSeedOrder(lockedEntries);
       }
     }
 
@@ -923,7 +1015,7 @@
           for (let i = 0; i < batch.length; i++) {
             const candidate = batch[i];
             const stats = statsResults[i];
-            if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+            if ((stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) || candidate.preVerified) {
               state.verifiedDailyQueue.push(candidate);
             }
           }
@@ -1125,28 +1217,34 @@
     /**
      * Fetch JSON with strict AbortController timeout and detailed error reporting
      */
-    async function fetchJsonStrict(url, timeoutMs = 6500) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          signal: controller.signal,
-          mode: 'cors',
-          credentials: 'omit',
-          headers: { 'Accept': 'application/json' }
-        });
-        clearTimeout(timer);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} ${res.statusText || ''}`.trim());
+    async function fetchJsonStrict(url, timeoutMs = 6500, retries = 1) {
+      let lastErr;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, {
+            signal: controller.signal,
+            mode: 'cors',
+            credentials: 'omit',
+            headers: { 'Accept': 'application/json' }
+          });
+          clearTimeout(timer);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status} ${res.statusText || ''}`.trim());
+          }
+          return await res.json();
+        } catch (err) {
+          clearTimeout(timer);
+          lastErr = (err && err.name === 'AbortError')
+            ? new Error(`Timeout after ${timeoutMs}ms`)
+            : new Error(err?.message || 'Network / CORS blocked');
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 900));
+          }
         }
-        return await res.json();
-      } catch (err) {
-        clearTimeout(timer);
-        if (err && err.name === 'AbortError') {
-          throw new Error(`Timeout after ${timeoutMs}ms`);
-        }
-        throw new Error(err?.message || 'Network / CORS blocked');
       }
+      throw lastErr;
     }
 
     /**
@@ -1635,6 +1733,7 @@
 
       try {
         await fetchSourceA_EspnRosters(sessionId);
+        saveRosterToLocalCache(state.players);
         return;
       } catch (errA) {
         if (sessionId !== state.loadSessionId) return;
@@ -1645,6 +1744,7 @@
 
       try {
         await fetchSourceB_EspnCoreAthletes(sessionId);
+        saveRosterToLocalCache(state.players);
         return;
       } catch (errB) {
         if (sessionId !== state.loadSessionId) return;
@@ -1661,6 +1761,19 @@
         const msgC = `Source C (Wikipedia API): ${errC.message}`;
         state.sourceErrors.push(msgC);
         logDiag(msgC, 'err');
+      }
+
+      // Backup 3: Last-known-good cached NBA roster from localStorage (prevents midnight ESPN maintenance outages)
+      const cachedPlayers = loadRosterFromLocalCache();
+      if (cachedPlayers.length >= 4) {
+        addPlayersToPool(cachedPlayers, 'Cached NBA Roster');
+        state.mpgSyncComplete = true;
+        rebuildDailySeedPool();
+        if (state.players.length >= 4) {
+          logDiag(`Loaded ${state.players.length} players from local roster cache during live API maintenance.`, 'warn');
+          launchGameImmediately(sessionId);
+          return;
+        }
       }
 
       if (sessionId !== state.loadSessionId) return;
@@ -2304,14 +2417,8 @@
           triedFallback = true;
           imgEl.src = playerSnapshot.fallbackHeadshot;
         } else {
-          state.brokenImageIds.add(playerSnapshot.id);
-          if (state.gameMode === 'daily' && state.dailyRunning) {
-            const loaded = await loadDailyPlayer(state.dailyIndex + 1);
-            if (loaded && state.dailyRunning) {
-              resetAndStartDailyTimer();
-            }
-            return;
-          } else if (state.gameMode === 'infinite' && getEligibleInfiniteCandidates().length >= 4) {
+          if (state.gameMode === 'infinite' && getEligibleInfiniteCandidates().length >= 4) {
+            state.brokenImageIds.add(playerSnapshot.id);
             state.roundNumber = Math.max(0, state.roundNumber - 1);
             nextRound();
             return;
