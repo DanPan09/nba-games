@@ -202,7 +202,7 @@
       <div class="hidden md:block pt-4 border-t border-zinc-800/80 text-[11px] text-zinc-500 space-y-1">
         <div class="flex items-center justify-between">
           <span>Season Era</span>
-          <span class="text-zinc-300 font-semibold">2019–20 to Present</span>
+          <span id="sidebar-era" class="text-zinc-300 font-semibold">2019–20 to 2025–26</span>
         </div>
         <div class="flex items-center justify-between">
           <span>Daily Reset</span>
@@ -267,13 +267,18 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div class="bg-zinc-950/70 border border-zinc-800 rounded-2xl p-3.5">
               <label for="select-season-pool" class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
-                Season Scope (Post-2018-19 Only)
+                Decade
               </label>
               <select
                 id="select-season-pool"
+                onchange="onDecadeChange()"
                 class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-blue-500"
               >
-                <option value="all_post_2019" selected>All Post-2018-19 Seasons (2019–20 to 2025–26)</option>
+                <option value="2020s" selected>2020's (2019–20 to 2025–26)</option>
+                <option value="2010s">2010's (2009–10 to 2018–19)</option>
+                <option value="2000s">2000's (1999–00 to 2008–09)</option>
+                <option value="1990s">1990's (1989–90 to 1998–99)</option>
+                <option value="1980s">1980's (1979–80 to 1988–89)</option>
               </select>
             </div>
 
@@ -325,7 +330,7 @@
                 <div class="text-xs font-black uppercase tracking-widest text-blue-400 mb-1.5">YEAR</div>
                 <div id="wheel-year-val" class="text-3xl sm:text-4xl font-black tracking-tight text-white leading-none">???</div>
                 <div id="wheel-year-sub" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mt-2">
-                  Post-2018-19 Season (2019–20+)
+                  Spin to select season
                 </div>
               </div>
 
@@ -524,7 +529,7 @@
 
       <!-- Footer -->
       <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
-        <span>Post-2018-19 NBA regular season stats from Basketball-Reference, ESPN as backup (2019–20 through 2025–26).</span>
+        <span>NBA regular season stats from Basketball-Reference, ESPN as backup.</span>
       </footer>
 
     </div>
@@ -535,10 +540,16 @@
 
   <script>
     /**
-     * Post-2018-19 NBA Scope Constants (2019-20 through 2025-26)
+     * Decades (by the calendar year the season ends in): 2020's = 2019-20 .. 2025-26, 2010's = 2009-10 .. 2018-19, etc.
      */
-    const MIN_SEASON_END_YEAR = 2020; // 2019-20 season (strictly after 2018-19)
-    const MAX_SEASON_END_YEAR = 2026; // 2025-26 season
+    const DECADES = {
+      '2020s': { label: "2020's", from: 2020, to: 2026, range: '2019–20 to 2025–26' },
+      '2010s': { label: "2010's", from: 2010, to: 2019, range: '2009–10 to 2018–19' },
+      '2000s': { label: "2000's", from: 2000, to: 2009, range: '1999–00 to 2008–09' },
+      '1990s': { label: "1990's", from: 1990, to: 1999, range: '1989–90 to 1998–99' },
+      '1980s': { label: "1980's", from: 1980, to: 1989, range: '1979–80 to 1988–89' }
+    };
+    const DEFAULT_DECADE = '2020s';
     const NBA_REGULAR_SEASON_TYPE = 2;
     const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
 
@@ -587,6 +598,19 @@
 
     function toHttps(url) {
       return String(url || '').replace(/^http:\/\//i, 'https://');
+    }
+
+    // Default empty profile picture, shown whenever a player headshot is missing or fails to load.
+    const DEFAULT_PFP = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
+      '<rect width="96" height="96" fill="#27272a"/><circle cx="48" cy="37" r="17" fill="#71717a"/>' +
+      '<path d="M14 96c0-21 15-34 34-34s34 13 34 34z" fill="#71717a"/></svg>');
+    function pfpFallback(img) {
+      img.onerror = null; img.onload = null;
+      img.src = DEFAULT_PFP;
+    }
+    function pfpCheck(img) {                           // some hosts answer 200 with an empty 1px image
+      if (img.naturalWidth <= 2) pfpFallback(img);
     }
 
     function escapeHtml(str) {
@@ -664,6 +688,36 @@
       { espnId: 26, abbr: 'UTA', name: 'Utah Jazz' },
       { espnId: 27, abbr: 'WAS', name: 'Washington Wizards' }
     ];
+
+    /**
+     * Franchise history. Keys are the franchises above; entries are [firstSeasonEndYear, lastSeasonEndYear,
+     * Basketball-Reference code, abbreviation shown, name shown]. A franchise with no entry for a year did not exist
+     * then (e.g. Miami before 1988-89) and is skipped by the wheel. Franchises not listed never changed.
+     */
+    const TEAM_ERAS = {
+      BKN: [[1980, 2012, 'NJN', 'NJN', 'New Jersey Nets'], [2013, 2026, 'BRK', 'BKN', 'Brooklyn Nets']],
+      CHA: [[1989, 2002, 'CHH', 'CHH', 'Charlotte Hornets'], [2005, 2014, 'CHA', 'CHA', 'Charlotte Bobcats'], [2015, 2026, 'CHO', 'CHA', 'Charlotte Hornets']],
+      NOP: [[2003, 2005, 'NOH', 'NOH', 'New Orleans Hornets'], [2006, 2007, 'NOK', 'NOK', 'New Orleans/Oklahoma City Hornets'],
+            [2008, 2013, 'NOH', 'NOH', 'New Orleans Hornets'], [2014, 2026, 'NOP', 'NOP', 'New Orleans Pelicans']],
+      OKC: [[1980, 2008, 'SEA', 'SEA', 'Seattle SuperSonics'], [2009, 2026, 'OKC', 'OKC', 'Oklahoma City Thunder']],
+      MEM: [[1996, 2001, 'VAN', 'VAN', 'Vancouver Grizzlies'], [2002, 2026, 'MEM', 'MEM', 'Memphis Grizzlies']],
+      WAS: [[1980, 1997, 'WSB', 'WSB', 'Washington Bullets'], [1998, 2026, 'WAS', 'WAS', 'Washington Wizards']],
+      LAC: [[1980, 1984, 'SDC', 'SDC', 'San Diego Clippers'], [1985, 2026, 'LAC', 'LAC', 'LA Clippers']],
+      SAC: [[1980, 1985, 'KCK', 'KCK', 'Kansas City Kings'], [1986, 2026, 'SAC', 'SAC', 'Sacramento Kings']],
+      PHX: [[1980, 2026, 'PHO', 'PHX', 'Phoenix Suns']],
+      DAL: [[1981, 2026, 'DAL', 'DAL', 'Dallas Mavericks']],
+      MIA: [[1989, 2026, 'MIA', 'MIA', 'Miami Heat']],
+      MIN: [[1990, 2026, 'MIN', 'MIN', 'Minnesota Timberwolves']],
+      ORL: [[1990, 2026, 'ORL', 'ORL', 'Orlando Magic']],
+      TOR: [[1996, 2026, 'TOR', 'TOR', 'Toronto Raptors']]
+    };
+
+    function getTeamEra(team, year) {
+      const eras = TEAM_ERAS[team.abbr];
+      if (!eras) return { bbr: team.abbr, abbr: team.abbr, name: team.name };
+      const e = eras.find(([from, to]) => year >= from && year <= to);
+      return e ? { bbr: e[2], abbr: e[3], name: e[4] } : null;
+    }
 
     function formatSeasonLabel(seasonEndYear) {
       return `${seasonEndYear - 1}-${String(seasonEndYear).slice(-2)}`;
@@ -821,12 +875,13 @@
     const state = {
       p1Name: 'Player 1',
       p2Name: 'Player 2',
-      seasonPool: 'all_post_2019',
+      seasonPool: DEFAULT_DECADE,
       statVisibility: 'hidden',
       round: 1,
       maxRounds: 5,
       phase: 'READY_TO_SPIN', // READY_TO_SPIN | SPINNING | LOADING | PICK_1 | PICK_2 | COMPLETE
       currentTeam: null,
+      currentEra: null,             // that franchise's name/abbr/Basketball-Reference code in the spun season
       currentYear: null,
       currentPool: [],
       draftedIdsThisRound: new Set(),
@@ -919,12 +974,11 @@
     }
 
     // ---- Basketball-Reference (primary source for positions + team-specific season stats) ----
-    const BBR_CODE = { BKN: 'BRK', CHA: 'CHO', PHX: 'PHO' };
 
     // Basketball-Reference sends no CORS headers, so browsers need a relay. Instead of trying the direct request
     // and each public relay one after another (up to 10s each), race them all and take the first real page.
     function fetchBbrTeamPage(team, year, timeoutMs = 8000) {
-      const target = `https://www.basketball-reference.com/teams/${BBR_CODE[team.abbr] || team.abbr}/${year}.html`;
+      const target = `https://www.basketball-reference.com/teams/${(getTeamEra(team, year) || team).bbr || team.abbr}/${year}.html`;
       const routes = [
         target,
         `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
@@ -982,7 +1036,9 @@
         if (!id || !name) continue;
         const num = (i) => parseFloat(c[i].textContent) || 0;
         if (num(iG) < 10) continue;
-        const primary = c[iPos].textContent.trim().split(/[-/,\s]+/).filter((p) => POSITIONS.includes(p));
+        const rawPos = c[iPos].textContent.trim();
+        let primary = rawPos.split(/[-/,\s]+/).filter((p) => POSITIONS.includes(p));
+        if (!primary.length && /^(G|F|G-F|F-G|F-C|C-F)$/.test(rawPos)) primary = resolvePlayerPositions(name, rawPos);
         const sh = share[id] || {};
         const extra = POSITIONS.filter((p) => (sh[p] || 0) >= 20 && !primary.includes(p)).sort((a, b) => sh[b] - sh[a]);
         const positions = [...new Set([...primary, ...extra])];
@@ -1151,6 +1207,8 @@
       state.p1Name = document.getElementById('input-p1-name').value.trim() || 'Player 1';
       state.p2Name = document.getElementById('input-p2-name').value.trim() || 'Player 2';
       state.seasonPool = document.getElementById('select-season-pool').value;
+      updateEraLabel();
+      topUpSpinQueue();                                 // drops queued seasons from another decade, loads one from this one
       state.statVisibility = document.getElementById('select-stat-visibility').value;
 
       safeSetStorage('bkc_82_0_vs_p1', state.p1Name);
@@ -1162,6 +1220,17 @@
       document.getElementById('results-screen').classList.add('hidden');
       document.getElementById('draft-screen').classList.remove('hidden');
       renderAll();
+    }
+
+    function updateEraLabel() {
+      const el = document.getElementById('sidebar-era');
+      if (el) el.textContent = getDecade().range;
+    }
+
+    function onDecadeChange() {
+      state.seasonPool = document.getElementById('select-season-pool').value;
+      updateEraLabel();
+      topUpSpinQueue();
     }
 
     function rematchSameNames() {
@@ -1183,6 +1252,7 @@
       state.round = 1;
       state.phase = 'READY_TO_SPIN';
       state.currentTeam = null;
+      state.currentEra = null;
       state.currentYear = null;
       state.currentPool = [];
       state.draftedIdsThisRound = new Set();
@@ -1202,16 +1272,19 @@
       document.getElementById('wheel-team-val').textContent = '???';
       document.getElementById('wheel-team-sub').textContent = 'Spin to select NBA franchise';
       document.getElementById('wheel-year-val').textContent = '???';
-      document.getElementById('wheel-year-sub').textContent = 'Post-2018-19 Season (2019–20+)';
+      document.getElementById('wheel-year-sub').textContent = 'Spin to select season';
     }
 
     /**
-     * Spinning Wheels (Strictly Post-2018-19: 2019-20 through 2025-26)
+     * Spinning Wheels (seasons come from the selected decade)
      */
+    function getDecade() { return DECADES[state.seasonPool] || DECADES[DEFAULT_DECADE]; }
+    const yearInScope = (y) => { const d = getDecade(); return y >= d.from && y <= d.to; };
+
     function getYears() {
-      const start = MIN_SEASON_END_YEAR;
+      const d = getDecade();
       const years = [];
-      for (let y = start; y <= MAX_SEASON_END_YEAR; y++) years.push(y);
+      for (let y = d.from; y <= d.to; y++) years.push(y);
       return years;
     }
 
@@ -1219,7 +1292,8 @@
       const years = getYears();
       const pairs = [];
       NBA_TEAMS.forEach((team, ti) => years.forEach((year, yi) => {
-        if (!state.usedTeamYears.has(`${team.espnId}-${year}`)) pairs.push({ team, year, ti, yi });
+        const era = getTeamEra(team, year);           // null = franchise did not exist that season
+        if (era && !state.usedTeamYears.has(`${team.espnId}-${year}`)) pairs.push({ team, year, ti, yi, era });
       }));
       return pairs;
     }
@@ -1237,7 +1311,7 @@
     }
 
     function startSpinLoad(pair) {
-      const entry = { key: pairKey(pair.team, pair.year), team: pair.team, year: pair.year, failed: false, promise: null };
+      const entry = { key: pairKey(pair.team, pair.year), team: pair.team, year: pair.year, era: pair.era, failed: false, promise: null };
       entry.promise = fetchSeasonRosterAndStats(pair.team, pair.year)
         .then((pool) => { if (!pool || pool.length < 5) entry.failed = true; return pool; })
         .catch(() => { entry.failed = true; return null; });
@@ -1247,14 +1321,14 @@
     function takeNextSpin() {
       while (state.spinQueue.length) {
         const e = state.spinQueue.shift();
-        if (!e.failed && !state.usedTeamYears.has(e.key)) return e;
+        if (!e.failed && yearInScope(e.year) && !state.usedTeamYears.has(e.key)) return e;
       }
       const pair = pickRandomPair();
       return pair ? startSpinLoad(pair) : null;
     }
 
     function topUpSpinQueue() {
-      state.spinQueue = state.spinQueue.filter((e) => !e.failed);
+      state.spinQueue = state.spinQueue.filter((e) => !e.failed && yearInScope(e.year));
       while (state.spinQueue.length < 1) {
         const pair = pickRandomPair();
         if (!pair) break;
@@ -1296,17 +1370,18 @@
 
       for (let i = 0; i < 16; i++) {
         const sample = pairs[Math.floor(Math.random() * pairs.length)];
-        teamVal.textContent = sample.team.abbr;
+        teamVal.textContent = sample.era.abbr;
         yearVal.textContent = formatSeasonLabel(sample.year);
         await sleep(42 + i * 3);
         if (gid !== state.gameId) return;
       }
 
       teamVal.classList.remove('wheel-spinning'); yearVal.classList.remove('wheel-spinning');
-      teamVal.textContent = chosen.team.abbr; teamSub.textContent = chosen.team.name;
+      teamVal.textContent = chosen.era.abbr; teamSub.textContent = chosen.era.name;
       yearVal.textContent = formatSeasonLabel(chosen.year); yearSub.textContent = `${formatSeasonLabel(chosen.year)} Regular Season`;
 
       state.currentTeam = chosen.team;
+      state.currentEra = chosen.era;
       state.currentYear = chosen.year;
       state.currentPool = [];
       state.phase = 'LOADING';
@@ -1317,18 +1392,18 @@
       topUpSpinQueue();                                 // start loading the following spin while players pick
 
       if (!pool || pool.length < 5) {                   // never substitute other data: spin again automatically
-        state.currentTeam = null; state.currentYear = null; state.currentPool = [];
+        state.currentTeam = null; state.currentEra = null; state.currentYear = null; state.currentPool = [];
         state.failCount += 1;
         if (state.failCount >= 4) state.spinFailed = true;
         state.phase = 'READY_TO_SPIN';
-        showToast(`Couldn't load ${formatSeasonLabel(chosen.year)} ${chosen.team.abbr}.${state.spinFailed ? '' : ' Re-spinning...'}`);
+        showToast(`Couldn't load ${formatSeasonLabel(chosen.year)} ${chosen.era.abbr}.${state.spinFailed ? '' : ' Re-spinning...'}`);
         renderAll();
         return;
       }
 
       state.failCount = 0;
       state.usedTeamYears.add(`${chosen.team.espnId}-${chosen.year}`);
-      state.currentPool = pool.map((p) => ({ ...p, teamAbbr: chosen.team.abbr, seasonLabel: formatSeasonLabel(chosen.year) }));
+      state.currentPool = pool.map((p) => ({ ...p, teamAbbr: chosen.era.abbr, seasonLabel: formatSeasonLabel(chosen.year) }));
       state.draftedIdsThisRound = new Set();
       state.phase = state.resumePhase || 'PICK_1';
       state.resumePhase = null;
@@ -1502,11 +1577,11 @@
       }
 
       const seasonStr = formatSeasonLabel(state.currentYear);
-      titleEl.textContent = `${seasonStr} ${state.currentTeam.abbr}`;
+      titleEl.textContent = `${seasonStr} ${state.currentEra.abbr}`;
       badgeEl.textContent = `${state.currentPool.length} PLAYERS`;
 
       if (state.phase === 'LOADING') {
-        listEl.innerHTML = `<div class="py-14 px-4 text-center text-xs text-zinc-400">Loading ${seasonStr} ${escapeHtml(state.currentTeam.name)} roster...</div>`;
+        listEl.innerHTML = `<div class="py-14 px-4 text-center text-xs text-zinc-400">Loading ${seasonStr} ${escapeHtml(state.currentEra.name)} roster...</div>`;
         return;
       }
 
@@ -1537,7 +1612,7 @@
             ? 'Already drafted'
             : isPickPhase && !fitsRoster
               ? 'No valid slot open'
-              : `${seasonStr} ${state.currentTeam.abbr}`;
+              : `${seasonStr} ${state.currentEra.abbr}`;
 
         const badgesHtml = player.positions
           .map((pos, idx) =>
@@ -1552,9 +1627,10 @@
         item.innerHTML = `
           <div class="flex items-center gap-2.5 min-w-0">
             <img
-              src="${escapeHtml(player.headshot)}"
+              src="${player.headshot ? escapeHtml(player.headshot) : DEFAULT_PFP}"
               alt=""
-              onerror="this.style.display='none'"
+              onerror="pfpFallback(this)"
+              onload="pfpCheck(this)"
               class="w-9 h-9 rounded-xl object-cover bg-zinc-900 border border-zinc-800 shrink-0"
             />
             <div class="min-w-0">
