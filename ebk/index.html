@@ -260,7 +260,7 @@
         <div id="daily-start-screen" class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-pop">
           <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">10-Second Daily Gauntlet</h2>
           <p class="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
-            Name as many 2026–27 rotation players (&gt;8 MPG, 1+ GP) in a row as possible. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
+            Name as many 2026–27 NBA players in a row as possible. You have <span class="text-orange-400 font-bold">10.0 seconds</span> per player.
           </p>
 
           <div class="max-w-xs mx-auto mb-5">
@@ -472,7 +472,7 @@
 
       <!-- Footer -->
       <footer class="w-full py-3.5 text-center text-xs text-zinc-500 border-t border-zinc-900 px-4">
-        <span id="footer-source-text">Official 2026-27 NBA Regular Season ESPN logs verified prior to today's slate (&gt;8.0 MPG, 1+ GP).</span>
+        <span id="footer-source-text">Official 2026-27 NBA Regular Season ESPN logs verified prior to today's slate.</span>
       </footer>
 
     </div>
@@ -485,7 +485,7 @@
     const NBA_SEASON_YEAR = 2027;
     const NBA_SEASON_LABEL = '2026-27';
     const NBA_REGULAR_SEASON_TYPE = 2;
-    const MIN_QUALIFYING_MPG = 5; // Strictly > 8.0 MPG and >= 1 GP
+    const MIN_QUALIFYING_MPG = 8; // Strictly > 8.0 MPG and > 50% of team's games played
 
     /**
      * Global Leaderboard Configuration (Supabase / REST)
@@ -546,12 +546,15 @@
       players: [],                   // All active live NBA players
       playerMap: new Map(),          // Deduplicated player registry keyed by canonical ID
       teamCache: new Map(),          // team $ref -> { displayName, abbreviation }
-      verifiedStatsCache: new Map(), // espnId -> { gp, gs, mpg, rawMpg, pts, reb, ast }
-      invalidPlayerIds: new Set(),   // Players with <1 GP or <=8.0 MPG in 2026-27 regular season
+      teamGamesPlayedMap: new Map(), // teamId -> pre-today regular season games played
+      teamGpPromiseMap: new Map(),   // teamId -> in-flight Promise<number|null>
+      verifiedStatsCache: new Map(), // espnId -> { gp, gs, mpg, rawMpg, pts, reb, ast, minRequiredGp }
+      invalidPlayerIds: new Set(),   // Players failing >8.0 MPG or >50% team games played in 2026-27
       brokenImageIds: new Set(),
 
       todayDateKey: '',              // YYYY-MM-DD in America/New_York
       todayEventIds: new Set(),      // ESPN event IDs scheduled/live/finished today
+      todayPostTeamIds: new Set(),   // ESPN team IDs whose game today is already final ('post')
 
       dailySeedPool: [],             // Deterministic daily seed of active players
       dailySeedLockedMap: new Map(), // dateKey -> string[] of Supabase-locked ESPN player IDs
@@ -595,6 +598,9 @@
     const ESPN_ROSTER_URL = (teamId) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?enable=stats`;
     const ESPN_CORE_ATHLETES_URL = 'https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000&active=true';
     const ESPN_CORE_EVENTS_URL = (yyyymmdd) => `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events?dates=${yyyymmdd}`;
+    const ESPN_SCOREBOARD_URL = (yyyymmdd) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${yyyymmdd}`;
+    const ESPN_CORE_TEAM_RECORD_URL = (teamId) =>
+      `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/types/${NBA_REGULAR_SEASON_TYPE}/teams/${teamId}/record`;
 
     const ESPN_CORE_SEASON_STATS_URL = (athleteId) =>
       `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${NBA_SEASON_YEAR}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`;
@@ -617,6 +623,7 @@
           fallbackHeadshot: p.fallbackHeadshot,
           jersey: p.jersey,
           position: p.position,
+          teamId: p.teamId || null,
           teamName: p.teamName,
           teamAbbr: p.teamAbbr,
           mpg: p.mpg
@@ -1015,7 +1022,7 @@
           for (let i = 0; i < batch.length; i++) {
             const candidate = batch[i];
             const stats = statsResults[i];
-            if ((stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) || candidate.preVerified) {
+            if (isPlayerQualified(stats, candidate)) {
               state.verifiedDailyQueue.push(candidate);
             }
           }
@@ -1334,29 +1341,143 @@
     }
 
     /**
-     * Fetch Today's NBA Events from CORS-Open ESPN Core v2 (Same as Stathead)
+     * Parse W-L record summary string (e.g., "12-2" -> 14 games played)
+     */
+    function parseRecordSummaryGp(summary) {
+      const m = String(summary || '').trim().match(/^(\d+)\s*-\s*(\d+)/);
+      if (!m) return null;
+      return parseInt(m[1], 10) + parseInt(m[2], 10);
+    }
+
+    /**
+     * Record a team's pre-today regular-season games played into state.teamGamesPlayedMap
+     */
+    function setTeamGamesPlayed(teamId, rawTotalGp) {
+      const tid = String(teamId || '').trim();
+      if (!tid || typeof rawTotalGp !== 'number' || Number.isNaN(rawTotalGp) || rawTotalGp < 0) return;
+      const adjusted = state.todayPostTeamIds.has(tid) ? Math.max(0, rawTotalGp - 1) : rawTotalGp;
+      state.teamGamesPlayedMap.set(tid, adjusted);
+    }
+
+    /**
+     * Fetch Today's NBA Events & Scoreboard Status (identifies games played/finished today in EST)
      */
     async function fetchTodayEventsCore() {
       const { dateKey, compactKey } = getEstDateInfo();
       state.todayDateKey = dateKey;
       state.todayEventIds.clear();
+      state.todayPostTeamIds.clear();
 
-      try {
-        const data = await fetchJsonStrict(ESPN_CORE_EVENTS_URL(compactKey), 5000);
-        const items = Array.isArray(data?.items) ? data.items : [];
-        for (const item of items) {
-          const match = String(item?.$ref || '').match(/\/events\/(\d+)/);
-          if (match) state.todayEventIds.add(match[1]);
+      const [coreData, sbData] = await Promise.all([
+        fetchJsonStrict(ESPN_CORE_EVENTS_URL(compactKey), 5000).catch(() => null),
+        fetchJsonStrict(ESPN_SCOREBOARD_URL(compactKey), 5000).catch(() => null)
+      ]);
+
+      const items = Array.isArray(coreData?.items) ? coreData.items : [];
+      for (const item of items) {
+        const match = String(item?.$ref || '').match(/\/events\/(\d+)/);
+        if (match) state.todayEventIds.add(match[1]);
+      }
+
+      const events = Array.isArray(sbData?.events) ? sbData.events : [];
+      for (const ev of events) {
+        if (ev?.id) state.todayEventIds.add(String(ev.id));
+        const evState = ev?.status?.type?.state;
+        const comps = ev?.competitions?.[0]?.competitors || [];
+        for (const comp of comps) {
+          const tid = comp?.team?.id ? String(comp.team.id) : '';
+          if (!tid) continue;
+          if (evState === 'post') {
+            state.todayPostTeamIds.add(tid);
+          }
+          const recSummary = comp?.records?.[0]?.summary;
+          const totalGp = parseRecordSummaryGp(recSummary);
+          if (typeof totalGp === 'number') {
+            setTeamGamesPlayed(tid, totalGp);
+          }
         }
-      } catch (_) {}
+      }
     }
 
     /**
-     * STRICT 2026-27 NBA REGULAR SEASON VERIFICATION ENGINE (Same method as Stathead):
+     * Fetch a team's pre-today regular-season games played (cached per teamId)
+     */
+    async function getTeamPreTodayGamesPlayed(teamId, teamRef) {
+      let tid = teamId ? String(teamId) : '';
+      if (!tid && teamRef) {
+        const m = String(teamRef).match(/\/teams\/(\d+)/);
+        if (m) tid = m[1];
+      }
+      if (!tid) return null;
+
+      if (state.teamGamesPlayedMap.has(tid)) {
+        return state.teamGamesPlayedMap.get(tid);
+      }
+
+      if (state.teamGpPromiseMap.has(tid)) {
+        return await state.teamGpPromiseMap.get(tid);
+      }
+
+      const loader = (async () => {
+        try {
+          const recData = await fetchJsonStrict(ESPN_CORE_TEAM_RECORD_URL(tid), 5000);
+          const item = Array.isArray(recData?.items) ? recData.items[0] : null;
+          let totalGp = null;
+
+          if (Array.isArray(item?.stats)) {
+            const gpStat = item.stats.find(s => s && s.name === 'gamesPlayed');
+            if (gpStat && gpStat.value !== undefined && !Number.isNaN(Number(gpStat.value))) {
+              totalGp = Number(gpStat.value);
+            } else {
+              const wStat = item.stats.find(s => s && s.name === 'wins');
+              const lStat = item.stats.find(s => s && s.name === 'losses');
+              if (wStat && lStat) {
+                totalGp = Number(wStat.value) + Number(lStat.value);
+              }
+            }
+          }
+
+          if (totalGp === null && item?.summary) {
+            totalGp = parseRecordSummaryGp(item.summary);
+          }
+
+          if (typeof totalGp === 'number' && !Number.isNaN(totalGp)) {
+            setTeamGamesPlayed(tid, totalGp);
+            return state.teamGamesPlayedMap.get(tid);
+          }
+        } catch (_) {}
+        return null;
+      })();
+
+      state.teamGpPromiseMap.set(tid, loader);
+      try {
+        return await loader;
+      } finally {
+        state.teamGpPromiseMap.delete(tid);
+      }
+    }
+
+    /**
+     * Check whether verified stats meet backend thresholds (>8.0 MPG & >50% of team's games played)
+     */
+    function isPlayerQualified(stats, candidate = null) {
+      if (stats) {
+        const minGp = (typeof stats.minRequiredGp === 'number' && stats.minRequiredGp >= 1)
+          ? stats.minRequiredGp
+          : 1;
+        return stats.gp >= minGp && stats.rawMpg > MIN_QUALIFYING_MPG;
+      }
+      const cid = candidate ? String(candidate.espnId || candidate.id) : '';
+      if (cid && state.invalidPlayerIds.has(cid)) return false;
+      return Boolean(candidate && candidate.preVerified);
+    }
+
+    /**
+     * STRICT 2026-27 NBA REGULAR SEASON VERIFICATION ENGINE:
      * Queries `seasons/2027/types/2/athletes/{id}/statistics` and `seasons/2027/athletes/{id}/eventlog`,
      * excludes any game played TODAY in EST, and verifies that the player has:
-     *   1) Played at least 1 game this season prior to today (`preTodayGp >= 1`), AND
-     *   2) Averaged more than 8 minutes per game (`rawMpg > 8`).
+     *   1) Played at least Math.ceil(teamGames / 2) games this season prior to today (e.g. 7 of 14, 8 of 15), AND
+     *   2) Averaged strictly more than 8.0 minutes per game (`rawMpg > 8`).
      */
     async function getVerifiedPreTodayStats(player) {
       if (!player) return null;
@@ -1364,7 +1485,7 @@
       // Support manually imported JSON players that carry explicit mpg & no numeric ESPN ID
       if (!player.espnId || !/^\d+$/.test(player.espnId)) {
         if (typeof player.mpg === 'number' && player.mpg > MIN_QUALIFYING_MPG) {
-          return { gp: 1, gs: 0, mpg: player.mpg, rawMpg: player.mpg };
+          return { gp: 1, gs: 0, mpg: player.mpg, rawMpg: player.mpg, minRequiredGp: 1 };
         }
         return null;
       }
@@ -1434,13 +1555,26 @@
 
         const rawMpg = totalMin / preTodayGp;
 
-        // Require >= 1 game played AND strictly > 8.0 minutes per game
-        if (preTodayGp < 1 || !(rawMpg > MIN_QUALIFYING_MPG)) {
+        // Resolve team's pre-today regular-season games played to enforce >50% threshold
+        const teamRef = statsData?.team?.$ref || '';
+        const teamRefMatch = String(teamRef).match(/\/teams\/(\d+)/);
+        const resolvedTeamId = (teamRefMatch ? teamRefMatch[1] : null) || player.teamId || null;
+        if (resolvedTeamId && !player.teamId) {
+          player.teamId = resolvedTeamId;
+        }
+
+        const teamGp = await getTeamPreTodayGamesPlayed(resolvedTeamId, teamRef);
+        const minRequiredGp = (typeof teamGp === 'number' && teamGp >= 1)
+          ? Math.ceil(teamGp / 2)
+          : 1;
+
+        // Require >= Math.ceil(teamGp / 2) games played AND strictly > 8.0 minutes per game
+        if (preTodayGp < minRequiredGp || !(rawMpg > MIN_QUALIFYING_MPG)) {
           state.invalidPlayerIds.add(aid);
           return null;
         }
 
-        await hydratePlayerTeamAbbr(player, statsData?.team?.$ref);
+        await hydratePlayerTeamAbbr(player, teamRef);
 
         const mpg = Math.round(rawMpg * 10) / 10;
         player.mpg = mpg;
@@ -1450,6 +1584,7 @@
           gs,
           mpg,
           rawMpg,
+          minRequiredGp,
           pts: Math.round((totalPts / preTodayGp) * 10) / 10,
           reb: Math.round((totalReb / preTodayGp) * 10) / 10,
           ast: Math.round((totalAst / preTodayGp) * 10) / 10
@@ -1485,6 +1620,7 @@
             fallbackHeadshot: p.fallbackHeadshot || p.headshot,
             jersey: p.jersey || '?',
             position: p.position || 'NBA',
+            teamId: p.teamId ? String(p.teamId) : null,
             teamName: p.teamName || 'NBA',
             teamAbbr: p.teamAbbr || 'NBA',
             mpg: typeof p.mpg === 'number' ? p.mpg : null
@@ -1499,6 +1635,9 @@
           if (p.headshot && p.headshot !== existing.headshot) {
             existing.headshot = p.headshot;
             changed++;
+          }
+          if (p.teamId && !existing.teamId) {
+            existing.teamId = String(p.teamId);
           }
           if (p.teamName && p.teamName !== 'NBA' && p.teamName !== 'Active NBA Roster' && existing.teamName !== p.teamName) {
             existing.teamName = p.teamName;
@@ -1517,7 +1656,7 @@
 
         const footerEl = document.getElementById('footer-source-text');
         if (footerEl) {
-          footerEl.textContent = `Official ${NBA_SEASON_LABEL} NBA Regular Season ESPN logs verified prior to today via ${sourceLabel} (>8.0 MPG, 1+ GP).`;
+          footerEl.textContent = `Official ${NBA_SEASON_LABEL} NBA Regular Season ESPN logs verified prior to today via ${sourceLabel}.`;
         }
       }
       return changed;
@@ -1568,6 +1707,22 @@
 
       logDiag(`Source A: Found ${teams.length} teams. Streaming rosters...`, 'ok');
 
+      // Extract team games played from ESPN teams endpoint if present
+      for (const t of teams) {
+        const recItem = t?.record?.items?.[0];
+        let totalGp = null;
+        if (Array.isArray(recItem?.stats)) {
+          const gpStat = recItem.stats.find(s => s && s.name === 'gamesPlayed');
+          if (gpStat && gpStat.value !== undefined) totalGp = Number(gpStat.value);
+        }
+        if (totalGp === null && recItem?.summary) {
+          totalGp = parseRecordSummaryGp(recItem.summary);
+        }
+        if (typeof totalGp === 'number' && !Number.isNaN(totalGp)) {
+          setTeamGamesPlayed(t.id, totalGp);
+        }
+      }
+
       // Deterministic team order so daily seed builds consistently across browsers
       const sortedTeams = [...teams].sort((a, b) =>
         String(a.id).localeCompare(String(b.id))
@@ -1585,6 +1740,12 @@
             try {
               const data = await fetchJsonStrict(ESPN_ROSTER_URL(team.id), 5500);
               if (sessionId !== state.loadSessionId) return;
+
+              const rosterRecSummary = data?.team?.recordSummary;
+              const rosterTotalGp = parseRecordSummaryGp(rosterRecSummary);
+              if (typeof rosterTotalGp === 'number') {
+                setTeamGamesPlayed(team.id, rosterTotalGp);
+              }
 
               let rawAthletes = [];
               if (Array.isArray(data?.athletes)) {
@@ -1608,6 +1769,7 @@
                     fullName: (a.displayName || a.fullName).trim(),
                     firstName: a.firstName,
                     lastName: a.lastName,
+                    teamId: String(team.id),
                     teamName: data?.team?.displayName || team.displayName || team.name || 'NBA',
                     teamAbbr: data?.team?.abbreviation || team.abbreviation || 'NBA',
                     jersey: a.jersey || '?',
@@ -1892,6 +2054,9 @@
       state.players = [];
       state.playerMap.clear();
       state.teamCache.clear();
+      state.teamGamesPlayedMap.clear();
+      state.teamGpPromiseMap.clear();
+      state.todayPostTeamIds.clear();
       state.verifiedStatsCache.clear();
       state.invalidPlayerIds.clear();
       state.brokenImageIds.clear();
@@ -2289,7 +2454,7 @@
       for (const cand of shuffled) {
         if (warmed >= count || state.gameMode !== 'infinite') break;
         const stats = await getVerifiedPreTodayStats(cand);
-        if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+        if (isPlayerQualified(stats)) {
           warmed++;
         }
       }
@@ -2314,7 +2479,7 @@
       imgEl.classList.add('opacity-0', 'scale-95');
       skeletonEl.classList.remove('hidden');
       feedbackEl.className = 'font-semibold text-zinc-500';
-      feedbackEl.textContent = `Verifying ${NBA_SEASON_LABEL} rotation player (>8.0 MPG)...`;
+      feedbackEl.textContent = `Loading next ${NBA_SEASON_LABEL} NBA player...`;
 
       let validPool = getEligibleInfiniteCandidates();
       if (validPool.length === 0) return;
@@ -2345,7 +2510,7 @@
         const stats = await getVerifiedPreTodayStats(candidate);
         if (reqToken !== state.roundRequestToken || state.gameMode !== 'infinite') return;
 
-        if (stats && stats.gp >= 1 && stats.rawMpg > MIN_QUALIFYING_MPG) {
+        if (isPlayerQualified(stats)) {
           state.usedInfiniteIds.add(candidate.id);
           state.roundNumber++;
           state.roundAnswered = false;
@@ -2637,6 +2802,7 @@
       'terry rozier': ['scary terry', 'rozier'],
       'jaime jaquez': ['jaime', 'jaquez'],
       'nikola jovic': ['jovic'],
+      'kelel ware': ['ware', 'kelel ware', 'kel el ware'],
       'kel el ware': ['ware', 'kelel ware'],
       'kyle kuzma': ['kuz', 'kuzma'],
       'jordan poole': ['poole', 'jp'],
@@ -2681,7 +2847,8 @@
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/['’.-]/g, ' ')
+        .replace(/['’]/g, '')
+        .replace(/[.-]/g, ' ')
         .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, ' ')
@@ -2741,10 +2908,10 @@
       const targetSurname = targetParts[targetParts.length - 1] || targetLast;
       const guessCompact = guess.replace(/\s+/g, '');
 
-      // 1. Exact full name, last name, or trailing surname token match
+      // 1. Exact full name, last name, or trailing surname token match (supports 3+ letter surnames like "Fox")
       if (guess === targetFull) return true;
       if (targetLast.length >= 3 && guess === targetLast) return true;
-      if (targetSurname.length >= 4 && guess === targetSurname) return true;
+      if (targetSurname.length >= 3 && guess === targetSurname) return true;
       if (guessCompact === targetFull.replace(/\s+/g, '')) return true;
       if (targetLast.length >= 4 && guessCompact === targetLast.replace(/\s+/g, '')) return true;
 
