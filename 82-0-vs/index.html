@@ -89,6 +89,10 @@
     }
 
     button { cursor: pointer; }
+    .wheel-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto 12px; }
+    .wheel-wrap canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 0 4px #18181b, 0 8px 28px rgba(0,0,0,.55); }
+    .wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 3; width: 0; height: 0;
+      border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid #fff; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
   </style>
 </head>
 <body class="court-bg app-shell flex flex-col min-h-screen selection:bg-red-500 selection:text-white">
@@ -283,7 +287,6 @@
               >
                 <option value="all_post_2019" selected>All Post-2018-19 Seasons (2019–20 to 2025–26)</option>
                 <option value="recent_3">Last 3 Seasons (2023–24 to 2025–26)</option>
-                <option value="archive_only">Verified Archive Seasons (Instant Offline)</option>
               </select>
             </div>
 
@@ -324,7 +327,8 @@
 
               <!-- TEAM Wheel (Red Accent) -->
               <div id="wheel-team-card" class="bg-zinc-950 border-2 border-red-500/80 rounded-2xl p-5 text-center shadow-lg shadow-red-950/25 transition-transform">
-                <div class="text-xs font-black uppercase tracking-widest text-red-400 mb-1.5">TEAM</div>
+                <div class="text-xs font-black uppercase tracking-widest text-red-400 mb-3">TEAM</div>
+                <div class="wheel-wrap"><div class="wheel-pointer"></div><canvas id="wheel-team-canvas" width="380" height="380"></canvas></div>
                 <div id="wheel-team-val" class="text-3xl sm:text-4xl font-black tracking-tight text-white leading-none">???</div>
                 <div id="wheel-team-sub" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mt-2">
                   Spin to select NBA franchise
@@ -333,7 +337,8 @@
 
               <!-- YEAR Wheel (Blue Accent) -->
               <div id="wheel-year-card" class="bg-zinc-950 border-2 border-blue-500/80 rounded-2xl p-5 text-center shadow-lg shadow-blue-950/25 transition-transform">
-                <div class="text-xs font-black uppercase tracking-widest text-blue-400 mb-1.5">YEAR</div>
+                <div class="text-xs font-black uppercase tracking-widest text-blue-400 mb-3">YEAR</div>
+                <div class="wheel-wrap"><div class="wheel-pointer"></div><canvas id="wheel-year-canvas" width="380" height="380"></canvas></div>
                 <div id="wheel-year-val" class="text-3xl sm:text-4xl font-black tracking-tight text-white leading-none">???</div>
                 <div id="wheel-year-sub" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mt-2">
                   Post-2018-19 Season (2019–20+)
@@ -363,6 +368,13 @@
                   class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow transition-all"
                 >
                   Spin Wheels
+                </button>
+                <button
+                  id="btn-respin"
+                  onclick="respin()"
+                  class="hidden px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow transition-all"
+                >
+                  No Valid Pick &mdash; Re-spin
                 </button>
                 <button
                   id="btn-reveal-results"
@@ -802,160 +814,6 @@
     }
 
     /**
-     * Verified Post-2018-19 Season Archive (2019-20 through 2025-26)
-     * Format: [name, espnId, [positions], pts, reb, ast, stl, blk]
-     */
-    const VERIFIED_POST_2019_ARCHIVE = [
-      {
-        espnId: 13, year: 2020, // 2019-20 Los Angeles Lakers
-        players: [
-          ['Anthony Davis', '6583', ['PF', 'C'], 26.1, 9.3, 3.2, 1.5, 2.3],
-          ['LeBron James', '1966', ['PG', 'SF', 'PF'], 25.3, 7.8, 10.2, 1.2, 0.5],
-          ['Kyle Kuzma', '3134907', ['PF', 'SF'], 12.8, 4.5, 1.3, 0.5, 0.4],
-          ['Kentavious Caldwell-Pope', '2581018', ['SG', 'SF'], 9.3, 2.1, 1.6, 0.8, 0.2],
-          ['Avery Bradley', '4240', ['SG', 'PG'], 8.6, 2.3, 1.3, 0.9, 0.1],
-          ['Danny Green', '3988', ['SG', 'SF'], 8.0, 3.3, 1.3, 1.3, 0.5],
-          ['Dwight Howard', '2384', ['C'], 7.5, 7.3, 0.7, 0.4, 1.1],
-          ['Rajon Rondo', '3026', ['PG'], 7.1, 3.0, 5.0, 0.8, 0.0],
-          ['JaVale McGee', '3452', ['C'], 6.6, 5.7, 0.5, 0.5, 1.4],
-          ['Alex Caruso', '2991350', ['PG', 'SG'], 5.5, 1.9, 1.9, 1.1, 0.3]
-        ]
-      },
-      {
-        espnId: 15, year: 2021, // 2020-21 Milwaukee Bucks
-        players: [
-          ['Giannis Antetokounmpo', '3032977', ['PF', 'C'], 28.1, 11.0, 5.9, 1.2, 1.2],
-          ['Khris Middleton', '6609', ['SF', 'SG'], 20.4, 6.0, 5.4, 1.1, 0.1],
-          ['Jrue Holiday', '3995', ['PG', 'SG'], 17.7, 4.5, 6.1, 1.6, 0.6],
-          ['Brook Lopez', '3448', ['C'], 12.3, 5.0, 0.7, 0.6, 1.5],
-          ['Bobby Portis', '3064482', ['PF', 'C'], 11.4, 7.1, 1.1, 0.8, 0.4],
-          ['Donte DiVincenzo', '3934673', ['SG', 'PG'], 10.4, 5.8, 3.1, 1.1, 0.2],
-          ['Pat Connaughton', '2578239', ['SG', 'SF'], 6.8, 4.8, 1.2, 0.7, 0.2],
-          ['P.J. Tucker', '3033', ['PF', 'SF'], 2.6, 2.8, 0.8, 0.5, 0.1]
-        ]
-      },
-      {
-        espnId: 9, year: 2022, // 2021-22 Golden State Warriors
-        players: [
-          ['Stephen Curry', '3975', ['PG', 'SG'], 25.5, 5.2, 6.3, 1.3, 0.4],
-          ['Klay Thompson', '6475', ['SG', 'SF'], 20.4, 3.9, 2.8, 0.5, 0.5],
-          ['Jordan Poole', '4277956', ['SG', 'PG'], 18.5, 3.4, 4.0, 0.8, 0.3],
-          ['Andrew Wiggins', '3059319', ['SF', 'PF'], 17.2, 4.5, 2.2, 1.0, 0.7],
-          ['Draymond Green', '6589', ['PF', 'C', 'SF'], 7.5, 7.3, 7.0, 1.3, 1.1],
-          ['Otto Porter Jr.', '2594922', ['SF', 'PF'], 8.2, 5.7, 1.5, 1.1, 0.5],
-          ['Gary Payton II', '3134903', ['PG', 'SG'], 7.1, 3.5, 0.9, 1.4, 0.3],
-          ['Kevon Looney', '3155535', ['C', 'PF'], 6.0, 7.3, 2.0, 0.6, 0.6]
-        ]
-      },
-      {
-        espnId: 7, year: 2023, // 2022-23 Denver Nuggets
-        players: [
-          ['Nikola Jokic', '3112335', ['C'], 24.5, 11.8, 9.8, 1.3, 0.7],
-          ['Jamal Murray', '3936299', ['PG', 'SG'], 20.0, 4.0, 6.2, 1.0, 0.2],
-          ['Michael Porter Jr.', '4278104', ['SF', 'PF'], 17.4, 5.5, 1.0, 0.6, 0.5],
-          ['Aaron Gordon', '3064290', ['PF', 'SF'], 16.3, 6.6, 3.0, 0.8, 0.8],
-          ['Bones Hyland', '4592492', ['PG', 'SG'], 12.1, 2.0, 3.0, 0.7, 0.3],
-          ['Bruce Brown', '4065670', ['SG', 'SF', 'PG'], 11.5, 4.1, 3.4, 1.1, 0.6],
-          ['Kentavious Caldwell-Pope', '2581018', ['SG', 'SF'], 10.8, 2.7, 2.4, 1.5, 0.5],
-          ['Jeff Green', '3209', ['PF', 'C'], 7.8, 2.6, 1.2, 0.3, 0.3]
-        ]
-      },
-      {
-        espnId: 2, year: 2024, // 2023-24 Boston Celtics
-        players: [
-          ['Jayson Tatum', '4065648', ['SF', 'PF'], 26.9, 8.1, 4.9, 1.0, 0.6],
-          ['Jaylen Brown', '3917376', ['SG', 'SF'], 23.0, 5.5, 3.6, 1.2, 0.5],
-          ['Kristaps Porzingis', '3102531', ['C', 'PF'], 20.1, 7.2, 2.0, 0.7, 1.9],
-          ['Derrick White', '3078576', ['SG', 'PG'], 15.2, 4.2, 5.2, 1.0, 1.2],
-          ['Jrue Holiday', '3995', ['PG', 'SG'], 12.5, 5.4, 4.8, 0.9, 0.8],
-          ['Payton Pritchard', '4066354', ['PG'], 9.6, 3.2, 3.4, 0.5, 0.1],
-          ['Sam Hauser', '4065804', ['SF', 'PF'], 9.0, 3.5, 1.0, 0.5, 0.3],
-          ['Al Horford', '3213', ['C', 'PF'], 8.6, 6.4, 2.6, 0.6, 1.0]
-        ]
-      },
-      {
-        espnId: 18, year: 2024, // 2023-24 New York Knicks
-        players: [
-          ['Jalen Brunson', '3934672', ['PG', 'SG'], 28.7, 3.6, 6.7, 0.9, 0.2],
-          ['Julius Randle', '3064514', ['PF', 'C'], 24.0, 9.2, 5.0, 0.5, 0.3],
-          ['RJ Barrett', '4395625', ['SF', 'SG'], 18.2, 4.3, 2.4, 0.5, 0.3],
-          ['Donte DiVincenzo', '3934673', ['SG', 'PG'], 15.5, 3.7, 2.7, 1.3, 0.4],
-          ['OG Anunoby', '3934719', ['SF', 'PF'], 14.1, 4.4, 1.5, 1.7, 1.0],
-          ['Josh Hart', '3062679', ['SG', 'SF', 'PF'], 9.4, 8.3, 4.1, 0.9, 0.3],
-          ['Isaiah Hartenstein', '4222252', ['C'], 7.8, 8.3, 2.5, 1.2, 1.1],
-          ['Mitchell Robinson', '4351852', ['C'], 5.6, 8.5, 0.6, 1.2, 1.1]
-        ]
-      },
-      {
-        espnId: 25, year: 2025, // 2024-25 Oklahoma City Thunder
-        players: [
-          ['Shai Gilgeous-Alexander', '4278073', ['PG', 'SG'], 32.7, 5.0, 6.4, 1.7, 1.0],
-          ['Jalen Williams', '4593803', ['SF', 'PF', 'SG'], 21.6, 5.3, 5.1, 1.6, 0.7],
-          ['Chet Holmgren', '4433255', ['C', 'PF'], 15.0, 8.0, 2.0, 0.7, 2.2],
-          ['Aaron Wiggins', '4397183', ['SG', 'SF'], 12.0, 3.9, 1.8, 0.8, 0.2],
-          ['Isaiah Hartenstein', '4222252', ['C'], 11.2, 10.7, 3.8, 0.8, 1.1],
-          ['Luguentz Dort', '4397020', ['SG', 'SF'], 10.1, 4.1, 1.6, 1.1, 0.5],
-          ['Cason Wallace', '4683692', ['PG', 'SG'], 8.4, 3.4, 2.5, 1.8, 0.5],
-          ['Alex Caruso', '2991350', ['PG', 'SG'], 7.1, 2.9, 2.5, 1.6, 0.6]
-        ]
-      },
-      {
-        espnId: 5, year: 2025, // 2024-25 Cleveland Cavaliers
-        players: [
-          ['Donovan Mitchell', '3908809', ['SG', 'PG'], 24.0, 4.5, 5.0, 1.3, 0.2],
-          ['Darius Garland', '4396907', ['PG'], 20.6, 2.9, 6.7, 1.2, 0.1],
-          ['Evan Mobley', '4432158', ['PF', 'C'], 18.5, 9.3, 3.2, 0.9, 1.6],
-          ['Jarrett Allen', '4066328', ['C'], 13.5, 9.7, 1.9, 0.9, 0.9],
-          ['Ty Jerome', '4065733', ['PG', 'SG'], 12.5, 2.5, 3.4, 1.1, 0.0],
-          ["De'Andre Hunter", '4065732', ['SF', 'PF'], 14.3, 4.2, 1.3, 0.7, 0.2],
-          ['Caris LeVert', '2991043', ['SG', 'SF'], 10.2, 2.8, 3.7, 0.9, 0.5],
-          ['Max Strus', '4065778', ['SG', 'SF'], 9.4, 4.3, 3.2, 0.5, 0.2]
-        ]
-      },
-      {
-        espnId: 16, year: 2024, // 2023-24 Minnesota Timberwolves
-        players: [
-          ['Anthony Edwards', '4594268', ['SG', 'SF'], 25.9, 5.4, 5.1, 1.3, 0.5],
-          ['Karl-Anthony Towns', '3136195', ['PF', 'C'], 21.8, 8.3, 3.0, 0.7, 0.7],
-          ['Rudy Gobert', '3032976', ['C'], 14.0, 12.9, 1.3, 0.7, 2.1],
-          ['Naz Reid', '4396971', ['C', 'PF'], 13.5, 5.2, 1.3, 0.8, 0.9],
-          ['Mike Conley', '3195', ['PG'], 11.4, 2.9, 5.9, 1.2, 0.2],
-          ['Jaden McDaniels', '4431671', ['SF', 'PF'], 10.5, 3.1, 1.4, 0.9, 0.6],
-          ['Nickeil Alexander-Walker', '4278039', ['SG', 'PG'], 8.0, 2.0, 2.5, 0.8, 0.5],
-          ['Kyle Anderson', '2993874', ['SF', 'PF'], 6.4, 3.5, 4.2, 0.9, 0.6]
-        ]
-      },
-      {
-        espnId: 6, year: 2024, // 2023-24 Dallas Mavericks
-        players: [
-          ['Luka Doncic', '3945274', ['PG', 'SG', 'SF'], 33.9, 9.2, 9.8, 1.4, 0.5],
-          ['Kyrie Irving', '6442', ['PG', 'SG'], 25.6, 5.0, 5.2, 1.3, 0.5],
-          ['Tim Hardaway Jr.', '2528210', ['SG', 'SF'], 14.4, 3.2, 1.8, 0.5, 0.1],
-          ['P.J. Washington', '4278078', ['PF', 'SF'], 11.7, 6.2, 1.5, 1.2, 0.9],
-          ['Daniel Gafford', '4278049', ['C'], 11.2, 6.9, 1.6, 1.0, 1.9],
-          ['Derrick Jones Jr.', '3936099', ['SF', 'PF'], 8.6, 3.3, 1.0, 0.7, 0.7],
-          ['Dereck Lively II', '4683688', ['C'], 8.8, 6.9, 1.1, 0.7, 1.4],
-          ['Dante Exum', '3102528', ['PG', 'SG'], 7.8, 2.7, 2.9, 0.4, 0.1]
-        ]
-      }
-    ];
-
-    function hydrateArchiveRoster(entry) {
-      return entry.players.map((p, i) => ({
-        id: `arch_${entry.espnId}_${entry.year}_${i}`,
-        espnId: p[1],
-        name: p[0],
-        positions: [...p[2]],
-        pts: p[3],
-        reb: p[4],
-        ast: p[5],
-        stl: p[6],
-        blk: p[7],
-        headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${p[1]}.png`
-      }));
-    }
-
-    /**
      * Strict JSON Fetcher & ESPN Core v2 Category Parser (Matches EBK & Stathead)
      */
     async function fetchJsonStrict(url, timeoutMs = 5000, retries = 1) {
@@ -1009,6 +867,8 @@
       usedTeamYears: new Set(),
       seasonRosterCache: new Map(),
       liveApiOk: true,
+      draftedAthletes: new Set(),
+      resumePhase: null,
       rosters: {
         1: { PG: null, SG: null, SF: null, PF: null, C: null },
         2: { PG: null, SG: null, SF: null, PF: null, C: null }
@@ -1026,94 +886,64 @@
         label.textContent = 'LIVE POST-2018-19 ESPN STATS';
       } else {
         dot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        label.textContent = 'VERIFIED POST-2018-19 ARCHIVE';
+        label.textContent = 'ESPN DATA UNAVAILABLE - SPIN AGAIN';
       }
+    }
+
+    async function loadAthleteSeason(base, athleteId) {
+      try {
+        const [prof, st] = await Promise.all([
+          fetchJsonStrict(`${base}/athletes/${athleteId}`, 9000, 1),
+          fetchJsonStrict(`${base}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`, 9000, 1)
+        ]);
+        const m = parseCoreStatsCategories(st);
+        if ((m.gamesPlayed || 0) < 10) return null;
+        const pts = m.avgPoints || 0, reb = m.avgRebounds || 0, ast = m.avgAssists || 0, stl = m.avgSteals || 0, blk = m.avgBlocks || 0;
+        if (pts === 0 && reb === 0 && ast === 0) return null;
+        const name = (prof.displayName || prof.fullName || 'NBA Player').trim();
+        let abbr = prof.position?.abbreviation;
+        if (!abbr && prof.position?.$ref) {
+          try { abbr = (await fetchJsonStrict(toHttps(prof.position.$ref), 9000, 0)).abbreviation; } catch (_) {}
+        }
+        return {
+          id: `espn_${athleteId}`,
+          espnId: String(athleteId),
+          name,
+          positions: resolvePlayerPositions(name, abbr),
+          pts: Number(pts.toFixed(1)), reb: Number(reb.toFixed(1)), ast: Number(ast.toFixed(1)),
+          stl: Number(stl.toFixed(1)), blk: Number(blk.toFixed(1)),
+          gp: m.gamesPlayed,
+          headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png`,
+          sortPv: 0.34 * pts + 0.59 * reb + 0.63 * ast + 1.29 * stl + 1.55 * blk
+        };
+      } catch (_) { return null; }
     }
 
     async function fetchSeasonRosterAndStats(team, seasonEndYear) {
       const cacheKey = `${team.espnId}-${seasonEndYear}`;
-      if (state.seasonRosterCache.has(cacheKey)) {
-        return state.seasonRosterCache.get(cacheKey);
-      }
-
-      const archiveHit = VERIFIED_POST_2019_ARCHIVE.find(
-        (a) => a.espnId === team.espnId && a.year === seasonEndYear
-      );
-
-      if (state.seasonPool === 'archive_only' && archiveHit) {
-        const hydrated = hydrateArchiveRoster(archiveHit);
-        state.seasonRosterCache.set(cacheKey, hydrated);
-        return hydrated;
-      }
-
+      if (state.seasonRosterCache.has(cacheKey)) return state.seasonRosterCache.get(cacheKey);
+      const base = `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${seasonEndYear}`;
       try {
-        const rosterUrl = `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${seasonEndYear}/teams/${team.espnId}/athletes?limit=20`;
-        const rosterPayload = await fetchJsonStrict(rosterUrl, 4500, 0);
-        const items = (rosterPayload?.items || []).slice(0, 15);
-        if (!items.length) throw new Error('No athletes returned');
-
-        const hydratedList = await Promise.all(
-          items.map(async (item) => {
-            const ref = toHttps(item?.$ref || '');
-            const idMatch = ref.match(/\/athletes\/(\d+)/);
-            if (!idMatch) return null;
-            const athleteId = idMatch[1];
-            const statsUrl = `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${seasonEndYear}/types/${NBA_REGULAR_SEASON_TYPE}/athletes/${athleteId}/statistics`;
-
-            const [profRes, statRes] = await Promise.allSettled([
-              fetchJsonStrict(ref, 4500, 0),
-              fetchJsonStrict(statsUrl, 4500, 0)
-            ]);
-            if (profRes.status !== 'fulfilled' || statRes.status !== 'fulfilled') return null;
-
-            const prof = profRes.value;
-            const sMap = parseCoreStatsCategories(statRes.value);
-            if ((sMap.gamesPlayed || 0) < 5) return null;
-
-            const pts = sMap.avgPoints || 0;
-            const reb = sMap.avgRebounds || 0;
-            const ast = sMap.avgAssists || 0;
-            const stl = sMap.avgSteals || 0;
-            const blk = sMap.avgBlocks || 0;
-            if (pts === 0 && reb === 0 && ast === 0) return null;
-
-            const name = (prof.displayName || prof.fullName || 'NBA Player').trim();
-            const positions = resolvePlayerPositions(name, prof.position?.abbreviation);
-
-            return {
-              id: `espn_${athleteId}_${seasonEndYear}`,
-              espnId: athleteId,
-              name,
-              positions,
-              pts: Number(pts.toFixed(1)),
-              reb: Number(reb.toFixed(1)),
-              ast: Number(ast.toFixed(1)),
-              stl: Number(stl.toFixed(1)),
-              blk: Number(blk.toFixed(1)),
-              headshot: `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png`,
-              sortPv: 0.34 * pts + 0.59 * reb + 0.63 * ast + 1.29 * stl + 1.55 * blk
-            };
-          })
-        );
-
-        const validPlayers = hydratedList
-          .filter(Boolean)
-          .sort((a, b) => b.sortPv - a.sortPv)
-          .slice(0, 12);
-
-        if (validPlayers.length >= 5) {
-          setApiStatusBadge(true);
-          state.seasonRosterCache.set(cacheKey, validPlayers);
-          return validPlayers;
-        }
-        throw new Error('Insufficient valid season logs');
+        const rp = await fetchJsonStrict(`${base}/teams/${team.espnId}/athletes?limit=60`, 9000, 1);
+        const ids = [...new Set((rp?.items || [])
+          .map((it) => (toHttps(it?.$ref || '').match(/\/athletes\/(\d+)/) || [])[1]).filter(Boolean))];
+        if (!ids.length) throw new Error('Empty roster');
+        const out = [];
+        let next = 0;
+        const worker = async () => {
+          while (next < ids.length) {
+            const p = await loadAthleteSeason(base, ids[next++]);
+            if (p) out.push(p);
+          }
+        };
+        await Promise.all(Array.from({ length: 8 }, worker));
+        const valid = out.sort((a, b) => b.sortPv - a.sortPv).slice(0, 12);
+        if (valid.length < 5) throw new Error('Too few players');
+        setApiStatusBadge(true);
+        state.seasonRosterCache.set(cacheKey, valid);
+        return valid;
       } catch (_) {
         setApiStatusBadge(false);
-        if (archiveHit) {
-          const hydrated = hydrateArchiveRoster(archiveHit);
-          state.seasonRosterCache.set(cacheKey, hydrated);
-          return hydrated;
-        }
         return null;
       }
     }
@@ -1183,6 +1013,8 @@
       state.currentPool = [];
       state.draftedIdsThisRound = new Set();
       state.usedTeamYears = new Set();
+      state.draftedAthletes = new Set();
+      state.resumePhase = null;
       state.rosters = {
         1: { PG: null, SG: null, SF: null, PF: null, C: null },
         2: { PG: null, SG: null, SF: null, PF: null, C: null }
@@ -1194,179 +1026,172 @@
       document.getElementById('wheel-team-sub').textContent = 'Spin to select NBA franchise';
       document.getElementById('wheel-year-val').textContent = '???';
       document.getElementById('wheel-year-sub').textContent = 'Post-2018-19 Season (2019–20+)';
+      buildWheels();
     }
 
     /**
      * Spinning Wheels (Strictly Post-2018-19: 2019-20 through 2025-26)
      */
-    function getAvailableTeamSeasonPairs() {
-      if (state.seasonPool === 'archive_only' || !state.liveApiOk) {
-        const archivePairs = VERIFIED_POST_2019_ARCHIVE.map((a) => ({
-          team: NBA_TEAMS.find((t) => t.espnId === a.espnId),
-          year: a.year
-        })).filter((p) => p.team && !state.usedTeamYears.has(`${p.team.espnId}-${p.year}`));
-        if (archivePairs.length > 0) return archivePairs;
-      }
+    function getYears() {
+      const start = state.seasonPool === 'recent_3' ? 2024 : MIN_SEASON_END_YEAR;
+      const years = [];
+      for (let y = start; y <= MAX_SEASON_END_YEAR; y++) years.push(y);
+      return years;
+    }
 
-      const startYear = state.seasonPool === 'recent_3' ? 2024 : MIN_SEASON_END_YEAR; // 2020 = 2019-20
+    function getAvailableTeamSeasonPairs() {
+      const years = getYears();
       const pairs = [];
-      for (const team of NBA_TEAMS) {
-        for (let year = startYear; year <= MAX_SEASON_END_YEAR; year++) {
-          if (!state.usedTeamYears.has(`${team.espnId}-${year}`)) {
-            pairs.push({ team, year });
-          }
-        }
-      }
+      NBA_TEAMS.forEach((team, ti) => years.forEach((year, yi) => {
+        if (!state.usedTeamYears.has(`${team.espnId}-${year}`)) pairs.push({ team, year, ti, yi });
+      }));
       return pairs;
+    }
+
+    const wheelRot = { team: 0, year: 0 };
+
+    function drawWheel(canvas, labels) {
+      const ctx = canvas.getContext('2d');
+      const n = labels.length, W = canvas.width, c = W / 2, r = c - 6, seg = (2 * Math.PI) / n;
+      ctx.clearRect(0, 0, W, W);
+      for (let i = 0; i < n; i++) {
+        const a0 = -Math.PI / 2 + i * seg;
+        ctx.beginPath(); ctx.moveTo(c, c); ctx.arc(c, c, r, a0, a0 + seg); ctx.closePath();
+        ctx.fillStyle = (n % 2 === 1 && i === n - 1) ? '#7c3aed' : (i % 2 === 0 ? '#dc2626' : '#2563eb');
+        ctx.fill(); ctx.strokeStyle = '#09090b'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.save(); ctx.translate(c, c); ctx.rotate(a0 + seg / 2);
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+        ctx.font = `800 ${n > 12 ? 17 : 22}px Inter, sans-serif`;
+        ctx.fillText(labels[i], r - 14, 0); ctx.restore();
+      }
+      ctx.beginPath(); ctx.arc(c, c, 24, 0, Math.PI * 2); ctx.fillStyle = '#09090b'; ctx.fill();
+    }
+
+    function buildWheels() {
+      const t = document.getElementById('wheel-team-canvas'), y = document.getElementById('wheel-year-canvas');
+      if (!t || !y) return;
+      drawWheel(t, NBA_TEAMS.map((x) => x.abbr));
+      drawWheel(y, getYears().map(formatSeasonLabel));
+      wheelRot.team = 0; wheelRot.year = 0;
+      for (const cv of [t, y]) { cv.style.transition = 'none'; cv.style.transform = 'rotate(0deg)'; }
+    }
+
+    function spinWheelTo(key, idx, n, ms) {
+      const cv = document.getElementById(`wheel-${key}-canvas`);
+      const seg = 360 / n;
+      const target = (360 - (idx + 0.5) * seg + 360) % 360;   // brings slice centre under the top pointer
+      const cur = ((wheelRot[key] % 360) + 360) % 360;
+      wheelRot[key] += ((target - cur + 360) % 360) + 360 * (5 + Math.floor(Math.random() * 3));
+      cv.style.transition = `transform ${ms}ms cubic-bezier(.1,.7,.1,1)`;
+      cv.style.transform = `rotate(${wheelRot[key]}deg)`;
+      return new Promise((res) => setTimeout(res, ms + 80));
+    }
+
+    function respin() {
+      if (state.phase !== 'PICK_1' && state.phase !== 'PICK_2') return;
+      state.resumePhase = state.phase;
+      state.phase = 'READY_TO_SPIN';
+      spinWheels();
     }
 
     async function spinWheels() {
       if (state.phase !== 'READY_TO_SPIN') return;
-
       const pairs = getAvailableTeamSeasonPairs();
-      if (!pairs.length) {
-        showToast('All team-seasons in this scope have been spun!');
-        return;
-      }
+      if (!pairs.length) { showToast('All team-seasons in this scope have been spun!'); return; }
 
       state.phase = 'SPINNING';
       state.selectedMoveSlot = null;
       renderControls();
 
-      const teamVal = document.getElementById('wheel-team-val');
-      const teamSub = document.getElementById('wheel-team-sub');
-      const yearVal = document.getElementById('wheel-year-val');
-      const yearSub = document.getElementById('wheel-year-sub');
-
-      teamVal.classList.add('wheel-spinning');
-      yearVal.classList.add('wheel-spinning');
-      teamSub.textContent = 'Spinning franchises...';
-      yearSub.textContent = 'Spinning post-2018-19 seasons...';
+      const teamVal = document.getElementById('wheel-team-val'), teamSub = document.getElementById('wheel-team-sub');
+      const yearVal = document.getElementById('wheel-year-val'), yearSub = document.getElementById('wheel-year-sub');
+      teamVal.textContent = '???'; yearVal.textContent = '???';
+      teamSub.textContent = 'Spinning franchises...'; yearSub.textContent = 'Spinning seasons...';
 
       const chosen = pairs[Math.floor(Math.random() * pairs.length)];
+      await Promise.all([
+        spinWheelTo('team', chosen.ti, NBA_TEAMS.length, 4800),
+        spinWheelTo('year', chosen.yi, getYears().length, 3800)
+      ]);
 
-      for (let i = 0; i < 16; i++) {
-        const sample = pairs[Math.floor(Math.random() * pairs.length)];
-        teamVal.textContent = sample.team.abbr;
-        yearVal.textContent = formatSeasonLabel(sample.year);
-        await new Promise((r) => setTimeout(r, 42 + i * 3));
-      }
-
-      teamVal.classList.remove('wheel-spinning');
-      yearVal.classList.remove('wheel-spinning');
-      teamVal.textContent = chosen.team.abbr;
-      teamSub.textContent = chosen.team.name;
-      yearVal.textContent = formatSeasonLabel(chosen.year);
-      yearSub.textContent = `${formatSeasonLabel(chosen.year)} Regular Season`;
+      teamVal.textContent = chosen.team.abbr; teamSub.textContent = chosen.team.name;
+      yearVal.textContent = formatSeasonLabel(chosen.year); yearSub.textContent = `${formatSeasonLabel(chosen.year)} Regular Season`;
 
       state.currentTeam = chosen.team;
       state.currentYear = chosen.year;
-      state.usedTeamYears.add(`${chosen.team.espnId}-${chosen.year}`);
+      state.currentPool = [];
       state.phase = 'LOADING';
       renderAll();
 
-      let pool = await fetchSeasonRosterAndStats(chosen.team, chosen.year);
-
-      // Seamless fallback to verified post-2018-19 archive if live fetch fails
+      const pool = await fetchSeasonRosterAndStats(chosen.team, chosen.year);
       if (!pool || pool.length < 5) {
-        const remainingArchive = VERIFIED_POST_2019_ARCHIVE.filter(
-          (a) => !state.usedTeamYears.has(`${a.espnId}-${a.year}`)
-        );
-        const fb = remainingArchive[Math.floor(Math.random() * remainingArchive.length)] || VERIFIED_POST_2019_ARCHIVE[0];
-        const fbTeam = NBA_TEAMS.find((t) => t.espnId === fb.espnId);
-        state.currentTeam = fbTeam;
-        state.currentYear = fb.year;
-        state.usedTeamYears.add(`${fbTeam.espnId}-${fb.year}`);
-        teamVal.textContent = fbTeam.abbr;
-        teamSub.textContent = fbTeam.name;
-        yearVal.textContent = formatSeasonLabel(fb.year);
-        yearSub.textContent = `${formatSeasonLabel(fb.year)} Verified Season`;
-        pool = hydrateArchiveRoster(fb);
+        state.currentTeam = null; state.currentYear = null; state.currentPool = [];
+        state.phase = 'READY_TO_SPIN';
+        showToast(`Couldn't load ${formatSeasonLabel(chosen.year)} ${chosen.team.abbr} data from ESPN. Spin again.`);
+        renderAll();
+        return;
       }
 
-      state.currentPool = pool.map((p) => ({
-        ...p,
-        teamAbbr: state.currentTeam.abbr,
-        seasonLabel: formatSeasonLabel(state.currentYear)
-      }));
+      state.usedTeamYears.add(`${chosen.team.espnId}-${chosen.year}`);
+      state.currentPool = pool.map((p) => ({ ...p, teamAbbr: chosen.team.abbr, seasonLabel: formatSeasonLabel(chosen.year) }));
       state.draftedIdsThisRound = new Set();
-      state.phase = 'PICK_1';
+      state.phase = state.resumePhase || 'PICK_1';
+      state.resumePhase = null;
       renderAll();
     }
 
     /**
      * Roster Placement, Eligibility & Drag-and-Drop Swapping
      */
-    function canPlayerFitRoster(player, roster) {
-      for (const pos of player.positions) {
-        if (!roster[pos]) return true;
-      }
-      for (const pos of player.positions) {
-        const occupant = roster[pos];
-        if (occupant) {
-          for (const altPos of occupant.positions) {
-            if (altPos !== pos && !roster[altPos]) return true;
-          }
+    function findAssignment(players) {
+      const res = {};
+      const sorted = [...players].sort((a, b) => a.positions.length - b.positions.length);
+      const bt = (i) => {
+        if (i === sorted.length) return true;
+        for (const pos of sorted[i].positions) {
+          if (!res[pos]) { res[pos] = sorted[i]; if (bt(i + 1)) return true; delete res[pos]; }
         }
-      }
-      return false;
+        return false;
+      };
+      return bt(0) ? res : null;
+    }
+
+    function canPlayerFitRoster(player, roster) {
+      const current = POSITIONS.map((p) => roster[p]).filter(Boolean);
+      return !!findAssignment([...current, player]);
     }
 
     function draftPlayerForActiveTurn(poolPlayerId) {
       const activeNum = getActivePlayerNum();
-      if (!activeNum || state.draftedIdsThisRound.has(poolPlayerId)) return;
-
+      if (!activeNum) return;
       const player = state.currentPool.find((p) => p.id === poolPlayerId);
-      if (!player) return;
+      if (!player || state.draftedAthletes.has(String(player.espnId))) return;
 
       const roster = state.rosters[activeNum];
-      let placedPos = null;
-
-      for (const pos of player.positions) {
-        if (!roster[pos]) {
-          roster[pos] = { ...player };
-          placedPos = pos;
-          break;
-        }
+      const copy = { ...player };
+      let placed = player.positions.find((pos) => !roster[pos]);
+      if (placed) {
+        roster[placed] = copy;
+      } else {
+        const asg = findAssignment([...POSITIONS.map((p) => roster[p]).filter(Boolean), copy]);
+        if (!asg) { showToast(`No valid slot for ${player.name} (${player.positions.join('/')}).`); return; }
+        for (const pos of POSITIONS) roster[pos] = asg[pos] || null;
+        placed = POSITIONS.find((pos) => roster[pos] === copy);
+        showToast(`Shifted teammates so ${player.name} can play ${placed}.`);
       }
 
-      if (!placedPos) {
-        for (const pos of player.positions) {
-          const occupant = roster[pos];
-          if (occupant) {
-            for (const altPos of occupant.positions) {
-              if (altPos !== pos && !roster[altPos]) {
-                roster[altPos] = occupant;
-                roster[pos] = { ...player };
-                placedPos = pos;
-                showToast(`Shifted ${occupant.name} to ${altPos} so ${player.name} can take ${pos}.`);
-                break;
-              }
-            }
-          }
-          if (placedPos) break;
-        }
-      }
-
-      if (!placedPos) {
-        showToast(`No open valid slot for ${player.name} (${player.positions.join('/')}). Drag players on ${getPlayerName(activeNum)}'s roster first.`);
-        return;
-      }
-
+      state.draftedAthletes.add(String(player.espnId));
       state.draftedIdsThisRound.add(player.id);
       state.selectedMoveSlot = null;
 
       if (state.phase === 'PICK_1') {
         state.phase = 'PICK_2';
-      } else if (state.phase === 'PICK_2') {
-        if (state.round < state.maxRounds) {
-          state.round += 1;
-          state.phase = 'READY_TO_SPIN';
-        } else {
-          state.phase = 'COMPLETE';
-        }
+      } else if (state.round < state.maxRounds) {
+        state.round += 1;
+        state.phase = 'READY_TO_SPIN';
+      } else {
+        state.phase = 'COMPLETE';
       }
-
       renderAll();
     }
 
@@ -1421,6 +1246,7 @@
 
       p1Panel.classList.remove('ring-2', 'ring-red-400');
       p2Panel.classList.remove('ring-2', 'ring-blue-400');
+      document.getElementById('btn-respin').classList.add('hidden');
       roundPill.textContent = `ROUND ${state.round} / ${state.maxRounds}`;
 
       if (state.phase === 'READY_TO_SPIN') {
@@ -1444,6 +1270,11 @@
         turnSubtext.textContent = 'Select an available player on the left (no duplicates).';
         btnSpin.disabled = true;
         btnReveal.classList.add('hidden');
+        const stuck = !state.currentPool.some((p) => !state.draftedAthletes.has(String(p.espnId)) && canPlayerFitRoster(p, state.rosters[activeNum]));
+        if (stuck) {
+          turnSubtext.textContent = 'No remaining player fits an open slot on this roster - re-spin.';
+          document.getElementById('btn-respin').classList.remove('hidden');
+        }
         if (activeNum === 1) p1Panel.classList.add('ring-2', 'ring-red-400');
         else p2Panel.classList.add('ring-2', 'ring-blue-400');
       } else if (state.phase === 'COMPLETE') {
@@ -1483,7 +1314,7 @@
 
       listEl.innerHTML = '';
       for (const player of state.currentPool) {
-        const isDrafted = state.draftedIdsThisRound.has(player.id);
+        const isDrafted = state.draftedAthletes.has(String(player.espnId));
         const fitsRoster = isPickPhase ? canPlayerFitRoster(player, activeRoster) : true;
 
         const item = document.createElement('div');
@@ -1501,9 +1332,9 @@
         const subText = state.statVisibility === 'visible'
           ? `${player.pts.toFixed(1)} PTS • ${player.reb.toFixed(1)} REB • ${player.ast.toFixed(1)} AST`
           : isDrafted
-            ? 'Drafted this round'
+            ? 'Already drafted'
             : isPickPhase && !fitsRoster
-              ? 'No open slot (drag roster first)'
+              ? 'No valid slot open'
               : `${seasonStr} ${state.currentTeam.abbr}`;
 
         const badgesHtml = player.positions
@@ -1532,7 +1363,7 @@
           <div class="flex items-center gap-1 shrink-0">${badgesHtml}</div>
         `;
 
-        if (isPickPhase && !isDrafted) {
+        if (isPickPhase && !isDrafted && fitsRoster) {
           item.onclick = () => draftPlayerForActiveTurn(player.id);
         }
 
@@ -1798,6 +1629,7 @@
       const savedP2 = safeGetStorage('bkc_82_0_vs_p2');
       if (savedP1) document.getElementById('input-p1-name').value = savedP1;
       if (savedP2) document.getElementById('input-p2-name').value = savedP2;
+      buildWheels();
       updateEstCountdowns();
       setInterval(updateEstCountdowns, 1000);
     }
