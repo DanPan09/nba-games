@@ -89,6 +89,25 @@
     }
 
     button { cursor: pointer; }
+
+    /* Roster panels: muted grey until it is that player's turn to pick, then they light up */
+    .roster-panel {
+      border: 2px solid rgba(113, 113, 122, 0.45);
+      filter: grayscale(1) brightness(0.85);
+      opacity: 0.5;
+      box-shadow: none;
+      transition: opacity 0.35s ease, filter 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+    }
+    .roster-panel:hover { opacity: 0.78; }
+    .roster-panel.is-active { filter: none; opacity: 1; transform: translateY(-2px); }
+    .roster-panel.roster-red.is-active {
+      border-color: rgba(248, 113, 113, 0.95);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.22), 0 0 38px rgba(239, 68, 68, 0.5);
+    }
+    .roster-panel.roster-blue.is-active {
+      border-color: rgba(96, 165, 250, 0.95);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22), 0 0 38px rgba(59, 130, 246, 0.5);
+    }
   </style>
 </head>
 <body class="court-bg app-shell flex flex-col min-h-screen selection:bg-red-500 selection:text-white">
@@ -199,33 +218,6 @@
       <!-- Main Content Container -->
       <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 flex flex-col items-center justify-center">
 
-        <!-- Top Sub-Header Bar -->
-        <div class="w-full flex items-center justify-between gap-3 mb-5">
-          <div class="flex items-center gap-2.5">
-            <span class="px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/40 text-red-400 text-xs font-black tracking-wider uppercase">
-              Red Corner
-            </span>
-            <span class="text-zinc-500 font-black text-xs">VS.</span>
-            <span class="px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/40 text-blue-400 text-xs font-black tracking-wider uppercase">
-              Blue Corner
-            </span>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <span id="api-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-bold text-zinc-300">
-              <span id="api-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span id="api-status-label">POST-2018-19 BASKETBALL-REFERENCE STATS READY</span>
-            </span>
-            <button
-              id="btn-back-home"
-              onclick="goHome()"
-              class="hidden px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold text-zinc-300 hover:text-white transition-all"
-            >
-              ← Setup
-            </button>
-          </div>
-        </div>
-
         <!-- SCREEN 1: HOME / SETUP SCREEN -->
         <section id="home-screen" class="w-full max-w-2xl bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl animate-pop">
           <div class="text-center mb-6">
@@ -236,7 +228,7 @@
               <span class="text-red-500">82-0</span> <span class="text-blue-500">VS.</span>
             </h2>
             <p class="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-              Spin a franchise and a specific post-2018-19 season (<strong class="text-zinc-200">2019–20 through 2025–26</strong>). Alternate picks across 5 rounds into valid positions, drag players to rearrange lineups, and battle for the highest projected win total.
+              Beat a friend in a unique spin on 82-0 of the last 7 seasons.
             </p>
           </div>
 
@@ -302,7 +294,6 @@
           <!-- Rules Summary -->
           <div class="bg-zinc-950/80 border border-zinc-800/90 rounded-2xl p-4 text-xs text-zinc-400 space-y-1.5 mb-6">
             <p><strong class="text-zinc-200">Alternating Order:</strong> Player 1 always picks 1st in Round 1, then first-pick priority alternates every round (R1: P1, R2: P2, R3: P1, R4: P2, R5: P1).</p>
-            <p><strong class="text-zinc-200">Valid Positions &amp; Dragging:</strong> Players can only be slotted into their real primary or secondary positions. Drag players on your roster anytime to shift them into other valid slots.</p>
           </div>
 
           <button
@@ -394,7 +385,7 @@
             </div>
 
             <!-- Middle Bar (4 cols): Player 1 Roster (Red Theme) -->
-            <div id="p1-roster-panel" class="lg:col-span-4 bg-zinc-900/90 border-2 border-red-500/60 rounded-3xl overflow-hidden shadow-xl transition-all">
+            <div id="p1-roster-panel" class="roster-panel roster-red lg:col-span-4 bg-zinc-900/90 rounded-3xl overflow-hidden">
               <div class="px-4 py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-between">
                 <h3 id="p1-panel-title" class="text-xs sm:text-sm font-black uppercase tracking-wider truncate">
                   Player 1
@@ -412,7 +403,7 @@
             </div>
 
             <!-- Right Bar (4 cols): Player 2 Roster (Blue Theme) -->
-            <div id="p2-roster-panel" class="lg:col-span-4 bg-zinc-900/90 border-2 border-blue-500/60 rounded-3xl overflow-hidden shadow-xl transition-all">
+            <div id="p2-roster-panel" class="roster-panel roster-blue lg:col-span-4 bg-zinc-900/90 rounded-3xl overflow-hidden">
               <div class="px-4 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between">
                 <h3 id="p2-panel-title" class="text-xs sm:text-sm font-black uppercase tracking-wider truncate">
                   Player 2
@@ -841,8 +832,10 @@
       draftedIdsThisRound: new Set(),
       usedTeamYears: new Set(),
       seasonRosterCache: new Map(),
+      spinQueue: [],                // look-ahead: next team-season(s) already loading while players pick
       liveApiOk: true,
-      draftedAthletes: new Set(),
+      draftedAthletes: new Set(),   // holds both player ids and normalized names (ids differ between data sources)
+      startingPlayer: 1,            // who picks first in round 1 (flips on every rematch)
       resumePhase: null,
       gameId: 0,
       spinFailed: false,
@@ -855,17 +848,8 @@
       selectedMoveSlot: null
     };
 
-    function setApiStatusBadge(isLive, src = 'ESPN BACKUP') {
+    function setApiStatusBadge(isLive) {
       state.liveApiOk = isLive;
-      const dot = document.getElementById('api-status-dot');
-      const label = document.getElementById('api-status-label');
-      if (isLive) {
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-        label.textContent = `LIVE ${src} STATS`;
-      } else {
-        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        label.textContent = 'DATA UNAVAILABLE - RE-SPINNING';
-      }
     }
 
     async function loadAthleteSeason(base, athleteId) {
@@ -937,32 +921,35 @@
     // ---- Basketball-Reference (primary source for positions + team-specific season stats) ----
     const BBR_CODE = { BKN: 'BRK', CHA: 'CHO', PHX: 'PHO' };
 
-    async function fetchTextStrict(url, timeoutMs = 10000) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.text();
-      } finally { clearTimeout(timer); }
-    }
-
-    // Basketball-Reference sends no CORS headers, so browsers need a relay; try direct first, then public relays.
-    async function fetchBbrTeamPage(team, year) {
+    // Basketball-Reference sends no CORS headers, so browsers need a relay. Instead of trying the direct request
+    // and each public relay one after another (up to 10s each), race them all and take the first real page.
+    function fetchBbrTeamPage(team, year, timeoutMs = 8000) {
       const target = `https://www.basketball-reference.com/teams/${BBR_CODE[team.abbr] || team.abbr}/${year}.html`;
       const routes = [
-        (u) => u,
-        (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-        (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`
+        target,
+        `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+        `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(target)}`
       ];
-      for (const route of routes) {
-        try {
-          const html = await fetchTextStrict(route(target), 10000);
-          if (html.includes('id="per_game')) return html;
-        } catch (_) {}
-      }
-      return null;
+      return new Promise((resolve) => {
+        const ctrls = [];
+        let pending = routes.length, done = false;
+        const settle = (html) => {
+          if (done) return;
+          if (html) { done = true; ctrls.forEach((c) => c.abort()); resolve(html); }
+          else if (--pending === 0) { done = true; resolve(null); }
+        };
+        routes.forEach((url) => {
+          const ctrl = new AbortController();
+          ctrls.push(ctrl);
+          const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+          fetch(url, { signal: ctrl.signal })
+            .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+            .then((html) => settle(html.includes('id="per_game') ? html : null))
+            .catch(() => settle(null))
+            .finally(() => clearTimeout(timer));
+        });
+      });
     }
 
     function parseBbrTeamPage(html) {
@@ -1010,32 +997,23 @@
       return out;
     }
 
-    async function fetchSeasonRosterAndStats(team, seasonEndYear) {
-      const cacheKey = `${team.espnId}-${seasonEndYear}`;
-      if (state.seasonRosterCache.has(cacheKey)) return state.seasonRosterCache.get(cacheKey);
+    async function fetchRosterFromBbr(team, seasonEndYear) {
       try {
         const html = await fetchBbrTeamPage(team, seasonEndYear);
         const list = html ? parseBbrTeamPage(html) : null;
-        if (list && list.length >= 5) {
-          const valid = list.sort((a, b) => b.sortPv - a.sortPv).slice(0, 12);
-          setApiStatusBadge(true, 'BASKETBALL-REFERENCE');
-          state.seasonRosterCache.set(cacheKey, valid);
-          return valid;
-        }
+        if (list && list.length >= 5) return list.sort((a, b) => b.sortPv - a.sortPv).slice(0, 12);
       } catch (_) {}
-      return fetchSeasonRosterFromEspn(team, seasonEndYear);   // backup if Basketball-Reference is unreachable
+      return null;
     }
 
-    async function fetchSeasonRosterFromEspn(team, seasonEndYear) {
-      const cacheKey = `${team.espnId}-${seasonEndYear}`;
-      if (state.seasonRosterCache.has(cacheKey)) return state.seasonRosterCache.get(cacheKey);
+    async function fetchRosterFromEspn(team, seasonEndYear) {
       const base = `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${seasonEndYear}`;
       try {
         let ids = [];
         try { ids = await idsFromGameBoxScores(team, seasonEndYear); } catch (_) {}
         if (ids.length < 5) { try { ids = await idsFromSeasonTable(team, seasonEndYear); } catch (_) {} }
         ids = [...new Set(ids)].slice(0, 30);
-        if (ids.length < 5) throw new Error('No season roster');
+        if (ids.length < 5) return null;
         const out = [];
         let next = 0;
         const worker = async () => {
@@ -1044,23 +1022,110 @@
             if (p) out.push(p);
           }
         };
-        await Promise.all(Array.from({ length: 8 }, worker));
+        await Promise.all(Array.from({ length: 15 }, worker));
         const valid = out.sort((a, b) => b.sortPv - a.sortPv).slice(0, 12);
-        if (valid.length < 5) throw new Error('Too few players');
-        setApiStatusBadge(true);
-        state.seasonRosterCache.set(cacheKey, valid);
-        return valid;
+        return valid.length >= 5 ? valid : null;
       } catch (_) {
-        setApiStatusBadge(false);
         return null;
       }
+    }
+
+    // Basketball-Reference is preferred (better positions). If it has not answered after a short grace period,
+    // ESPN starts loading in parallel and whichever returns a usable roster first wins.
+    const ESPN_HEDGE_MS = 3500;
+    function loadRosterFresh(team, seasonEndYear) {
+      return new Promise((resolve) => {
+        let settled = false, bbrDone = false, espnDone = false, espnStarted = false, hedge = null;
+        const win = (list, source) => {
+          if (settled || !list) return;
+          settled = true; clearTimeout(hedge); resolve({ list, source });
+        };
+        const checkFail = () => {
+          if (!settled && bbrDone && espnDone) { settled = true; resolve(null); }
+        };
+        const startEspn = () => {
+          if (espnStarted) return;
+          espnStarted = true;
+          fetchRosterFromEspn(team, seasonEndYear).then((l) => win(l, 'espn')).catch(() => {})
+            .finally(() => { espnDone = true; checkFail(); });
+        };
+        hedge = setTimeout(startEspn, ESPN_HEDGE_MS);
+        fetchRosterFromBbr(team, seasonEndYear).then((l) => win(l, 'bbr')).catch(() => {})
+          .finally(() => {
+            bbrDone = true; clearTimeout(hedge);
+            if (!settled) startEspn();
+            checkFail();
+          });
+      });
+    }
+
+    // Finished seasons never change, so Basketball-Reference rosters are kept in localStorage between games.
+    const ROSTER_CACHE_PREFIX = 'bkc_82_0_vs_roster_v1:';
+    function readRosterCache(key) {
+      try {
+        const raw = window.localStorage.getItem(ROSTER_CACHE_PREFIX + key);
+        if (!raw) return null;
+        const arr = JSON.parse(raw);
+        const ok = Array.isArray(arr) && arr.length >= 5 &&
+          arr.every((p) => p && p.id && Array.isArray(p.positions) && p.positions.length && typeof p.pts === 'number');
+        return ok ? arr : null;
+      } catch (_) { return null; }
+    }
+    function writeRosterCache(key, list) {
+      try { window.localStorage.setItem(ROSTER_CACHE_PREFIX + key, JSON.stringify(list)); } catch (_) {}
+    }
+    function preloadHeadshots(list) {
+      try { for (const p of list) { const img = new Image(); img.decoding = 'async'; img.src = p.headshot; } } catch (_) {}
+    }
+
+    const rosterInflight = new Map();   // de-duplicates simultaneous requests for the same team-season
+    function fetchSeasonRosterAndStats(team, seasonEndYear) {
+      const key = `${team.espnId}-${seasonEndYear}`;
+      if (state.seasonRosterCache.has(key)) return Promise.resolve(state.seasonRosterCache.get(key));
+      const cached = readRosterCache(key);
+      if (cached) {
+        state.seasonRosterCache.set(key, cached);
+        preloadHeadshots(cached);
+        return Promise.resolve(cached);
+      }
+      if (rosterInflight.has(key)) return rosterInflight.get(key);
+      const p = loadRosterFresh(team, seasonEndYear)
+        .then((res) => {
+          if (!res) { setApiStatusBadge(false); return null; }
+          setApiStatusBadge(true);
+          state.seasonRosterCache.set(key, res.list);
+          if (res.source === 'bbr') writeRosterCache(key, res.list);
+          preloadHeadshots(res.list);
+          return res.list;
+        })
+        .catch(() => null)
+        .finally(() => rosterInflight.delete(key));
+      rosterInflight.set(key, p);
+      return p;
     }
 
     /**
      * Turn & Round Helpers
      */
     function getFirstPickerForRound(roundNum) {
-      return roundNum % 2 === 1 ? 1 : 2;
+      const s = state.startingPlayer;
+      return roundNum % 2 === 1 ? s : (s === 1 ? 2 : 1);
+    }
+
+    // The same player can appear on several teams/seasons (trades) and under different ids depending on the data
+    // source, so identity is checked by id and by normalized name ("Nikola Jokić" == "Nikola Jokic", "Jr." ignored).
+    function normalizeName(name) {
+      return String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[.'’`]/g, '').replace(/[-]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
+        .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    const playerNameKey = (p) => 'name:' + normalizeName(p.name);
+    function isPlayerDrafted(p) {
+      return state.draftedAthletes.has(String(p.espnId)) || state.draftedAthletes.has(playerNameKey(p));
+    }
+    function markPlayerDrafted(p) {
+      state.draftedAthletes.add(String(p.espnId));
+      state.draftedAthletes.add(playerNameKey(p));
     }
 
     function getActivePlayerNum() {
@@ -1091,16 +1156,18 @@
       safeSetStorage('bkc_82_0_vs_p1', state.p1Name);
       safeSetStorage('bkc_82_0_vs_p2', state.p2Name);
 
+      state.startingPlayer = 1;                         // a fresh game from setup always starts with Player 1
       resetMatchState();
       document.getElementById('home-screen').classList.add('hidden');
       document.getElementById('results-screen').classList.add('hidden');
       document.getElementById('draft-screen').classList.remove('hidden');
-      document.getElementById('btn-back-home').classList.remove('hidden');
       renderAll();
     }
 
     function rematchSameNames() {
+      state.startingPlayer = state.startingPlayer === 1 ? 2 : 1;   // reverse the draft order
       resetMatchState();
+      showToast(`Rematch: ${getPlayerName(state.startingPlayer)} picks first.`);
       document.getElementById('results-screen').classList.add('hidden');
       document.getElementById('draft-screen').classList.remove('hidden');
       renderAll();
@@ -1110,7 +1177,6 @@
       document.getElementById('draft-screen').classList.add('hidden');
       document.getElementById('results-screen').classList.add('hidden');
       document.getElementById('home-screen').classList.remove('hidden');
-      document.getElementById('btn-back-home').classList.add('hidden');
     }
 
     function resetMatchState() {
@@ -1160,6 +1226,42 @@
 
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+    // Look-ahead: the next team-season is chosen and starts loading while players are still picking, so the
+    // following spin usually finds its roster already in memory.
+    const pairKey = (team, year) => `${team.espnId}-${year}`;
+
+    function pickRandomPair() {
+      const queued = new Set(state.spinQueue.map((e) => e.key));
+      const pairs = getAvailableTeamSeasonPairs().filter((p) => !queued.has(pairKey(p.team, p.year)));
+      return pairs.length ? pairs[Math.floor(Math.random() * pairs.length)] : null;
+    }
+
+    function startSpinLoad(pair) {
+      const entry = { key: pairKey(pair.team, pair.year), team: pair.team, year: pair.year, failed: false, promise: null };
+      entry.promise = fetchSeasonRosterAndStats(pair.team, pair.year)
+        .then((pool) => { if (!pool || pool.length < 5) entry.failed = true; return pool; })
+        .catch(() => { entry.failed = true; return null; });
+      return entry;
+    }
+
+    function takeNextSpin() {
+      while (state.spinQueue.length) {
+        const e = state.spinQueue.shift();
+        if (!e.failed && !state.usedTeamYears.has(e.key)) return e;
+      }
+      const pair = pickRandomPair();
+      return pair ? startSpinLoad(pair) : null;
+    }
+
+    function topUpSpinQueue() {
+      state.spinQueue = state.spinQueue.filter((e) => !e.failed);
+      while (state.spinQueue.length < 1) {
+        const pair = pickRandomPair();
+        if (!pair) break;
+        state.spinQueue.push(startSpinLoad(pair));
+      }
+    }
+
     function respin() {
       if (state.phase === 'READY_TO_SPIN') {            // retry after a failed load
         state.spinFailed = false; state.failCount = 0;
@@ -1176,6 +1278,8 @@
       if (state.phase !== 'READY_TO_SPIN') return;
       const pairs = getAvailableTeamSeasonPairs();
       if (!pairs.length) { showToast('All team-seasons in this scope have been spun!'); return; }
+      const next = takeNextSpin();                      // usually already loaded by the look-ahead
+      if (!next) { showToast('All team-seasons in this scope have been spun!'); return; }
 
       const gid = state.gameId;
       state.phase = 'SPINNING';
@@ -1187,8 +1291,8 @@
       teamVal.classList.add('wheel-spinning'); yearVal.classList.add('wheel-spinning');
       teamSub.textContent = 'Spinning franchises...'; yearSub.textContent = 'Spinning seasons...';
 
-      const chosen = pairs[Math.floor(Math.random() * pairs.length)];
-      const loading = fetchSeasonRosterAndStats(chosen.team, chosen.year);   // loads while the wheels flicker
+      const chosen = next;
+      const loading = next.promise;                     // keeps loading while the wheels flicker
 
       for (let i = 0; i < 16; i++) {
         const sample = pairs[Math.floor(Math.random() * pairs.length)];
@@ -1210,13 +1314,14 @@
 
       const pool = await loading;
       if (gid !== state.gameId) return;
+      topUpSpinQueue();                                 // start loading the following spin while players pick
 
       if (!pool || pool.length < 5) {                   // never substitute other data: spin again automatically
         state.currentTeam = null; state.currentYear = null; state.currentPool = [];
         state.failCount += 1;
         if (state.failCount >= 4) state.spinFailed = true;
         state.phase = 'READY_TO_SPIN';
-        showToast(`Couldn't load ${formatSeasonLabel(chosen.year)} ${chosen.team.abbr} from ESPN.${state.spinFailed ? '' : ' Re-spinning...'}`);
+        showToast(`Couldn't load ${formatSeasonLabel(chosen.year)} ${chosen.team.abbr}.${state.spinFailed ? '' : ' Re-spinning...'}`);
         renderAll();
         return;
       }
@@ -1255,7 +1360,7 @@
       const activeNum = getActivePlayerNum();
       if (!activeNum) return;
       const player = state.currentPool.find((p) => p.id === poolPlayerId);
-      if (!player || state.draftedAthletes.has(String(player.espnId))) return;
+      if (!player || isPlayerDrafted(player)) return;
 
       const roster = state.rosters[activeNum];
       const copy = { ...player };
@@ -1270,7 +1375,7 @@
         showToast(`Shifted teammates so ${player.name} can play ${placed}.`);
       }
 
-      state.draftedAthletes.add(String(player.espnId));
+      markPlayerDrafted(player);
       state.draftedIdsThisRound.add(player.id);
       state.selectedMoveSlot = null;
 
@@ -1325,8 +1430,15 @@
       renderCompetitorRoster(2);
       if (state.phase === 'READY_TO_SPIN' && !state.spinFailed &&
           !document.getElementById('draft-screen').classList.contains('hidden')) {
-        setTimeout(spinWheels, 900);                    // spin automatically as soon as a spin is available
+        setTimeout(spinWheels, 500);                    // spin automatically as soon as a spin is available
       }
+    }
+
+    // Only the roster of the player whose turn it is to pick is lit; both stay grey the rest of the time.
+    function updateRosterGlow() {
+      const activeNum = getActivePlayerNum();
+      document.getElementById('p1-roster-panel').classList.toggle('is-active', activeNum === 1);
+      document.getElementById('p2-roster-panel').classList.toggle('is-active', activeNum === 2);
     }
 
     function renderControls() {
@@ -1334,11 +1446,8 @@
       const turnHeadline = document.getElementById('turn-headline');
       const turnSubtext = document.getElementById('turn-subtext');
       const btnReveal = document.getElementById('btn-reveal-results');
-      const p1Panel = document.getElementById('p1-roster-panel');
-      const p2Panel = document.getElementById('p2-roster-panel');
 
-      p1Panel.classList.remove('ring-2', 'ring-red-400');
-      p2Panel.classList.remove('ring-2', 'ring-blue-400');
+      updateRosterGlow();
       document.getElementById('btn-respin').classList.add('hidden');
       roundPill.textContent = `ROUND ${state.round} / ${state.maxRounds}`;
 
@@ -1351,7 +1460,7 @@
           const rb = document.getElementById('btn-respin');
           rb.textContent = 'Retry Spin';
           rb.classList.remove('hidden');
-          turnSubtext.textContent = 'Could not load that season from ESPN.';
+          turnSubtext.textContent = 'Could not load that season.';
         }
         btnReveal.classList.add('hidden');
       } else if (state.phase === 'SPINNING' || state.phase === 'LOADING') {
@@ -1365,14 +1474,12 @@
         turnHeadline.textContent = `${getPlayerName(activeNum).toUpperCase()}'S PICK (${state.phase === 'PICK_1' ? '1ST' : '2ND'} OF ROUND)`;
         turnSubtext.textContent = 'Select an available player on the left (no duplicates).';
         btnReveal.classList.add('hidden');
-        const stuck = !state.currentPool.some((p) => !state.draftedAthletes.has(String(p.espnId)) && canPlayerFitRoster(p, state.rosters[activeNum]));
+        const stuck = !state.currentPool.some((p) => !isPlayerDrafted(p) && canPlayerFitRoster(p, state.rosters[activeNum]));
         if (stuck) {
           turnSubtext.textContent = 'No remaining player fits an open slot on this roster - re-spin.';
           document.getElementById('btn-respin').textContent = 'No Valid Pick — Re-spin';
           document.getElementById('btn-respin').classList.remove('hidden');
         }
-        if (activeNum === 1) p1Panel.classList.add('ring-2', 'ring-red-400');
-        else p2Panel.classList.add('ring-2', 'ring-blue-400');
       } else if (state.phase === 'COMPLETE') {
         roundPill.textContent = 'DRAFT COMPLETE';
         turnHeadline.className = 'text-sm sm:text-base font-black text-emerald-400';
@@ -1409,7 +1516,7 @@
 
       listEl.innerHTML = '';
       for (const player of state.currentPool) {
-        const isDrafted = state.draftedAthletes.has(String(player.espnId));
+        const isDrafted = isPlayerDrafted(player);
         const fitsRoster = isPickPhase ? canPlayerFitRoster(player, activeRoster) : true;
 
         const item = document.createElement('div');
@@ -1715,6 +1822,7 @@
       if (savedP2) document.getElementById('input-p2-name').value = savedP2;
       updateEstCountdowns();
       setInterval(updateEstCountdowns, 1000);
+      topUpSpinQueue();                               // start loading the first roster right away
     }
 
     if (document.readyState === 'loading') {
