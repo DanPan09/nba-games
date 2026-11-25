@@ -73,6 +73,17 @@
       transform: scale(1.03);
     }
 
+    /* Draft screen fits the viewport (no page scroll) on desktop-sized windows */
+    @media (min-width: 1024px) and (min-height: 560px) {
+      body.draft-active #app-main { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+      body.draft-active #draft-screen {
+        display: flex; flex-direction: column; gap: 0.5rem;
+        height: calc(100vh - var(--chrome-h, 100px) - 1rem);
+        min-height: 460px; max-height: 620px;
+      }
+      body.draft-active #draft-rosters { flex: 1 1 0; min-height: 0; }
+    }
+
     .slot-drop-target {
       border-color: rgba(212, 212, 216, 0.55) !important;
       background: rgba(255, 255, 255, 0.05) !important;
@@ -222,7 +233,7 @@
     <div class="flex-1 flex flex-col justify-between min-w-0">
 
       <!-- Main Content Container -->
-      <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 flex flex-col items-center justify-center">
+      <main id="app-main" class="flex-1 w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 flex flex-col items-center justify-center">
 
         <!-- SCREEN 1: HOME / SETUP SCREEN -->
         <section id="home-screen" class="w-full max-w-2xl bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl animate-pop">
@@ -304,7 +315,7 @@
 
           <!-- Rules Summary -->
           <div class="bg-zinc-950/80 border border-zinc-800/90 rounded-2xl p-4 text-xs text-zinc-400 space-y-1.5 mb-6">
-            <p><strong class="text-zinc-200">$20 Auction Format:</strong> Both managers start with $20 to bid on 10 random players until both 5-man lineups are full ($1 minimum per open roster spot).</p>
+            <p><strong class="text-zinc-200">$20 Auction Format:</strong> Both managers start with $20 to bid on 10 random players until both 5-man lineups are full ($1 minimum per open roster spot). If both managers pass, the one who opened the bidding gets the player for $1.</p>
           </div>
 
           <button
@@ -316,165 +327,100 @@
         </section>
 
         <!-- SCREEN 2: ACTIVE AUCTION SCREEN -->
-        <section id="draft-screen" class="hidden w-full space-y-5 animate-pop">
+        <section id="draft-screen" class="hidden w-full space-y-2 animate-pop">
 
-          <!-- Spin Card: the player (red, with headshot) + the season (blue) -->
-          <div class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-2xl">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <!-- Spin cards: the player (red, with headshot) + the season (blue) -->
+          <div class="grid grid-cols-3 gap-2.5 shrink-0">
 
-              <div id="wheel-player-card" class="sm:col-span-2 bg-zinc-950 border-2 border-red-500/80 rounded-2xl p-4 sm:p-5 shadow-lg shadow-red-950/25 flex items-center gap-4 transition-transform">
-                <img id="wheel-player-img" alt="" class="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover bg-zinc-900 border-2 border-zinc-700 shrink-0" />
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-black uppercase tracking-widest text-red-400 mb-1">PLAYER</div>
-                  <div id="wheel-player-val" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight truncate">???</div>
-                  <div id="wheel-player-sub" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mt-1.5 truncate">Spinning for a random player</div>
-                  <div id="wheel-player-badges" class="flex flex-wrap items-center gap-1 mt-2"></div>
-                  <div id="wheel-player-stats" class="hidden text-[11px] font-mono text-zinc-300 mt-2"></div>
-                  <div id="wheel-bid-chip" class="hidden"></div>
+            <div id="wheel-player-card" class="col-span-2 bg-zinc-950 border-2 border-red-500/80 rounded-xl px-3 py-1.5 shadow-lg shadow-red-950/25 flex items-center gap-3 min-w-0">
+              <img id="wheel-player-img" alt="" class="w-12 h-12 rounded-xl object-cover bg-zinc-900 border-2 border-zinc-700 shrink-0" />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 leading-none">
+                  <span class="text-[10px] font-black uppercase tracking-widest text-red-400">PLAYER</span>
+                  <div id="wheel-player-badges" class="flex items-center gap-1"></div>
+                </div>
+                <div id="wheel-player-val" class="text-lg font-black tracking-tight text-white leading-snug truncate">???</div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <div id="wheel-player-sub" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 truncate">Spinning for a random player</div>
+                  <div id="wheel-player-stats" class="hidden text-[10px] font-mono text-zinc-300 truncate"></div>
                 </div>
               </div>
-
-              <div id="wheel-year-card" class="bg-zinc-950 border-2 border-blue-500/80 rounded-2xl p-5 text-center shadow-lg shadow-blue-950/25 transition-transform flex flex-col items-center justify-center">
-                <div class="text-xs font-black uppercase tracking-widest text-blue-400 mb-1.5">YEAR</div>
-                <div id="wheel-year-val" class="text-3xl sm:text-4xl font-black tracking-tight text-white leading-none">???</div>
-                <div id="wheel-year-sub" class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mt-2">Spinning random season</div>
-              </div>
-
+              <div id="wheel-bid-chip" class="hidden"></div>
             </div>
 
-            <!-- Auction Status & Bidding Action Bar -->
-            <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col lg:flex-row items-center justify-between gap-3">
-              <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 text-center lg:text-left">
-                <span id="round-pill" class="px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 font-mono text-xs font-extrabold text-white">
-                  LOT 1 / 10
-                </span>
-                <span id="turn-headline" class="text-sm sm:text-base font-black text-red-400">
-                  PLAYER 1'S BID
-                </span>
-                <span id="turn-subtext" class="text-xs text-zinc-400 font-medium">
-                  Spinning automatically to reveal a random player...
-                </span>
-              </div>
-
-              <!-- Active Bidding Controls -->
-              <div id="bid-controls" class="hidden flex flex-wrap items-center justify-center gap-1.5 shrink-0">
-                <button
-                  id="btn-bid-step1"
-                  onclick="submitQuickBid(1)"
-                  class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-35 disabled:cursor-not-allowed text-white font-mono font-black text-xs shadow transition-all"
-                >
-                  Bid $1
-                </button>
-                <button
-                  id="btn-bid-step2"
-                  onclick="submitQuickBid(2)"
-                  class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-xs transition-all"
-                >
-                  +$2
-                </button>
-                <button
-                  id="btn-bid-step5"
-                  onclick="submitQuickBid(5)"
-                  class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-xs transition-all"
-                >
-                  +$5
-                </button>
-                <div class="inline-flex items-center rounded-xl bg-zinc-900 border border-zinc-700 overflow-hidden">
-                  <span class="pl-2.5 pr-1 font-mono text-xs font-black text-zinc-400">$</span>
-                  <input
-                    id="input-custom-bid"
-                    type="number"
-                    min="1"
-                    max="20"
-                    value="1"
-                    onkeydown="if(event.key==='Enter') submitCustomBid()"
-                    class="w-12 py-1.5 bg-transparent font-mono text-xs font-black text-white focus:outline-none"
-                  />
-                  <button
-                    id="btn-bid-custom"
-                    onclick="submitCustomBid()"
-                    class="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed text-xs font-black text-white uppercase border-l border-zinc-700 transition-all"
-                  >
-                    Bid
-                  </button>
-                </div>
-                <button
-                  id="btn-pass-bid"
-                  onclick="passBid()"
-                  class="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-amber-600/20 border border-zinc-700 hover:border-amber-500/60 text-zinc-300 hover:text-amber-300 font-black text-xs uppercase tracking-wider transition-all"
-                >
-                  Pass
-                </button>
-              </div>
-
-              <div class="flex items-center gap-2.5 shrink-0">
-                <button
-                  id="btn-respin"
-                  onclick="respin()"
-                  class="hidden px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow transition-all"
-                >
-                  Retry Spin
-                </button>
-                <button
-                  id="btn-reveal-results"
-                  onclick="showResultsScreen()"
-                  class="hidden px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow transition-all"
-                >
-                  Simulate 7-Game Series →
-                </button>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- Two Lineups: Player 1 (Red) | Player 2 (Blue) -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-
-            <div id="p1-roster-panel" class="roster-panel roster-red bg-zinc-900/90 rounded-3xl overflow-hidden">
-              <div class="px-4 py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-between gap-2">
-                <h3 id="p1-panel-title" class="text-xs sm:text-sm font-black uppercase tracking-wider truncate">
-                  Player 1
-                </h3>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <span id="p1-panel-budget" class="px-2 py-0.5 rounded-md bg-zinc-950/75 text-emerald-300 font-mono text-xs font-black">
-                    $20
-                  </span>
-                  <span id="p1-panel-count" class="px-2 py-0.5 rounded-md bg-black/30 font-mono text-xs font-extrabold">
-                    0 / 5
-                  </span>
-                </div>
-              </div>
-              <div class="p-3 space-y-2.5">
-                <div class="px-3 py-2 rounded-xl bg-zinc-950/80 border border-zinc-800 text-[11px] text-zinc-400">
-                  Drag players (or tap one, then tap another slot) to rearrange your lineup.
-                </div>
-                <div id="p1-slots-container" class="space-y-2"></div>
-              </div>
-            </div>
-
-            <div id="p2-roster-panel" class="roster-panel roster-blue bg-zinc-900/90 rounded-3xl overflow-hidden">
-              <div class="px-4 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between gap-2">
-                <h3 id="p2-panel-title" class="text-xs sm:text-sm font-black uppercase tracking-wider truncate">
-                  Player 2
-                </h3>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <span id="p2-panel-budget" class="px-2 py-0.5 rounded-md bg-zinc-950/75 text-emerald-300 font-mono text-xs font-black">
-                    $20
-                  </span>
-                  <span id="p2-panel-count" class="px-2 py-0.5 rounded-md bg-black/30 font-mono text-xs font-extrabold">
-                    0 / 5
-                  </span>
-                </div>
-              </div>
-              <div class="p-3 space-y-2.5">
-                <div class="px-3 py-2 rounded-xl bg-zinc-950/80 border border-zinc-800 text-[11px] text-zinc-400">
-                  Drag players (or tap one, then tap another slot) to rearrange your lineup.
-                </div>
-                <div id="p2-slots-container" class="space-y-2"></div>
-              </div>
+            <div id="wheel-year-card" class="bg-zinc-950 border-2 border-blue-500/80 rounded-xl px-3 py-1.5 text-center shadow-lg shadow-blue-950/25 flex flex-col items-center justify-center">
+              <div class="text-[10px] font-black uppercase tracking-widest text-blue-400">YEAR</div>
+              <div id="wheel-year-val" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none my-0.5">???</div>
+              <div id="wheel-year-sub" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Spinning random season</div>
             </div>
 
           </div>
+
+          <!-- Auction status & bidding bar -->
+          <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col lg:flex-row items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+              <span id="round-pill" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 font-mono text-sm font-extrabold text-white shrink-0">LOT 1 / 10</span>
+              <div class="min-w-0">
+                <div id="turn-headline" class="text-xl sm:text-2xl font-black text-red-400 leading-tight truncate">PLAYER 1'S BID</div>
+                <div id="turn-subtext" class="text-sm text-zinc-300 font-medium leading-snug">Spinning for a random player...</div>
+              </div>
+            </div>
+
+            <div id="bid-controls" class="hidden flex flex-wrap items-center justify-center gap-2 shrink-0">
+              <button id="btn-bid-step1" onclick="submitQuickBid(1)"
+                class="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-35 disabled:cursor-not-allowed text-white font-mono font-black text-base shadow transition-all">Bid $1</button>
+              <button id="btn-bid-step2" onclick="submitQuickBid(2)"
+                class="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-base transition-all">+$2</button>
+              <button id="btn-bid-step5" onclick="submitQuickBid(5)"
+                class="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-base transition-all">+$5</button>
+              <div class="inline-flex items-center rounded-xl bg-zinc-950 border border-zinc-600 overflow-hidden">
+                <span class="pl-3 pr-1 font-mono text-base font-black text-zinc-400">$</span>
+                <input id="input-custom-bid" type="number" min="1" max="20" value="1"
+                  onkeydown="if(event.key==='Enter') submitCustomBid()"
+                  class="w-16 py-3 bg-transparent font-mono text-base font-black text-white focus:outline-none" />
+                <button id="btn-bid-custom" onclick="submitCustomBid()"
+                  class="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed text-sm font-black text-white uppercase border-l border-zinc-600 transition-all">Bid</button>
+              </div>
+              <button id="btn-pass-bid" onclick="passBid()"
+                class="px-6 py-3 rounded-xl bg-zinc-900 hover:bg-amber-600/20 border border-zinc-600 hover:border-amber-500/60 text-zinc-200 hover:text-amber-300 font-black text-base uppercase tracking-wider transition-all">Pass</button>
+            </div>
+
+            <div class="flex items-center gap-2.5 shrink-0">
+              <button id="btn-respin" onclick="respin()"
+                class="hidden px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-sm uppercase tracking-wider shadow transition-all">Retry Spin</button>
+              <button id="btn-reveal-results" onclick="showResultsScreen()"
+                class="hidden px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider shadow transition-all">Simulate 7-Game Series →</button>
+            </div>
+          </div>
+
+          <!-- Two lineups: Player 1 (red) | Player 2 (blue) -->
+          <div id="draft-rosters" class="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+
+            <div id="p1-roster-panel" class="roster-panel roster-red bg-zinc-900/90 rounded-2xl overflow-hidden flex flex-col min-h-0">
+              <div class="px-3 py-1.5 bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-between gap-2 shrink-0">
+                <h3 id="p1-panel-title" class="text-sm font-black uppercase tracking-wider truncate">Player 1</h3>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span id="p1-panel-count" class="px-2 py-0.5 rounded-md bg-black/30 font-mono text-xs font-extrabold">0 / 5</span>
+                  <span id="p1-panel-budget" class="px-3 py-0.5 rounded-lg bg-zinc-950/85 border border-emerald-400/30 text-emerald-300 font-mono text-2xl font-black leading-tight">$20</span>
+                </div>
+              </div>
+              <div id="p1-slots-container" class="p-2 grid gap-1.5 flex-1 min-h-0" style="grid-template-rows: repeat(5, minmax(0, 1fr));"></div>
+            </div>
+
+            <div id="p2-roster-panel" class="roster-panel roster-blue bg-zinc-900/90 rounded-2xl overflow-hidden flex flex-col min-h-0">
+              <div class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between gap-2 shrink-0">
+                <h3 id="p2-panel-title" class="text-sm font-black uppercase tracking-wider truncate">Player 2</h3>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span id="p2-panel-count" class="px-2 py-0.5 rounded-md bg-black/30 font-mono text-xs font-extrabold">0 / 5</span>
+                  <span id="p2-panel-budget" class="px-3 py-0.5 rounded-lg bg-zinc-950/85 border border-emerald-400/30 text-emerald-300 font-mono text-2xl font-black leading-tight">$20</span>
+                </div>
+              </div>
+              <div id="p2-slots-container" class="p-2 grid gap-1.5 flex-1 min-h-0" style="grid-template-rows: repeat(5, minmax(0, 1fr));"></div>
+            </div>
+
+          </div>
+
+          <div class="text-[10px] text-zinc-500 text-center shrink-0">Drag players (or tap one, then tap another slot) to rearrange your lineups.</div>
         </section>
 
         <!-- SCREEN 3: RESULTS & 7-GAME SERIES OUTCOME -->
@@ -485,16 +431,14 @@
             <div class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">
               Best-of-7 Playoff Series Complete
             </div>
+            <div id="clutch-banner" class="hidden mx-auto mb-3 max-w-2xl px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/50 text-amber-200 text-sm sm:text-lg font-black"></div>
             <h2 id="winner-title" class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-4">
               PLAYER 1 WINS SERIES 4-2!
             </h2>
             <div class="inline-flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-5 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-sm sm:text-lg font-black">
-              <span id="score-pill-p1" class="text-red-400">Player 1: 4 (55.4 W)</span>
+              <span id="score-pill-p1" class="text-red-400">Player 1: 4</span>
               <span class="text-zinc-600">VS</span>
-              <span id="score-pill-p2" class="text-blue-400">Player 2: 2 (51.1 W)</span>
-            </div>
-            <div id="series-diff-sub" class="text-xs font-mono text-zinc-400 mt-2.5">
-              Projected win margin: 4.3
+              <span id="score-pill-p2" class="text-blue-400">Player 2: 2</span>
             </div>
           </div>
 
@@ -506,7 +450,7 @@
               <div class="px-5 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-between gap-2">
                 <div>
                   <h3 id="res-p1-heading" class="text-base sm:text-lg font-black uppercase">Player 1</h3>
-                  <p id="res-p1-sub" class="text-[11px] font-mono text-red-100">Proj. Wins: 0.0 | Spent: $0</p>
+                  <p id="res-p1-sub" class="text-[11px] font-mono text-red-100">Spent: $0 / $20</p>
                 </div>
                 <div id="res-p1-wins-badge" class="px-3.5 py-1.5 rounded-xl bg-zinc-950 text-white font-mono font-black text-sm sm:text-base border border-red-300/40">
                   4 GAMES
@@ -536,7 +480,7 @@
               <div class="px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between gap-2">
                 <div>
                   <h3 id="res-p2-heading" class="text-base sm:text-lg font-black uppercase">Player 2</h3>
-                  <p id="res-p2-sub" class="text-[11px] font-mono text-blue-100">Proj. Wins: 0.0 | Spent: $0</p>
+                  <p id="res-p2-sub" class="text-[11px] font-mono text-blue-100">Spent: $0 / $20</p>
                 </div>
                 <div id="res-p2-wins-badge" class="px-3.5 py-1.5 rounded-xl bg-zinc-950 text-white font-mono font-black text-sm sm:text-base border border-blue-300/40">
                   2 GAMES
@@ -1482,7 +1426,18 @@
       $('home-screen').classList.add('hidden');
       $('results-screen').classList.add('hidden');
       $('draft-screen').classList.remove('hidden');
+      setDraftMode(true);
       renderAll();
+    }
+
+    function updateChromeHeight() {
+      const h = document.querySelector('header'), f = document.querySelector('footer');
+      document.documentElement.style.setProperty('--chrome-h', ((h ? h.offsetHeight : 0) + (f ? f.offsetHeight : 0)) + 'px');
+    }
+
+    function setDraftMode(on) {
+      document.body.classList.toggle('draft-active', on);
+      updateChromeHeight();
     }
 
     function updateEraLabel() {
@@ -1502,10 +1457,12 @@
       showToast(`Rematch: ${getPlayerName(state.startingOpener)} opens the bidding.`);
       $('results-screen').classList.add('hidden');
       $('draft-screen').classList.remove('hidden');
+      setDraftMode(true);
       renderAll();
     }
 
     function goHome() {
+      setDraftMode(false);
       $('draft-screen').classList.add('hidden');
       $('results-screen').classList.add('hidden');
       $('home-screen').classList.remove('hidden');
@@ -1731,14 +1688,8 @@
         return;
       }
 
-      // Both passed -> a replacement is spun for the same lot
-      showToast(`Both passed on ${state.currentCandidate.player.name}. Spinning a replacement...`);
-      markPlayerUsed(state.currentCandidate.player);
-      state.currentCandidate = null;
-      state.lastSale = null;
-      state.spinDelayMs = 480;
-      state.phase = 'READY_TO_SPIN';
-      renderAll();
+      // Both passed -> the manager who opened this lot's bidding gets him for $1
+      awardCurrentPlayer(state.openingBidder, 1, `Both passed on ${state.currentCandidate.player.name}.`);
     }
 
     function awardCurrentPlayer(winnerNum, price, note) {
@@ -1823,7 +1774,7 @@
       roundPill.textContent = `LOT ${state.lotNumber} / ${state.maxLots}`;
 
       if (state.phase === 'READY_TO_SPIN') {
-        turnHeadline.className = 'text-sm sm:text-base font-black text-white';
+        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = `NEXT UP: LOT #${state.lotNumber}`;
         turnSubtext.textContent = 'Spinning for a random player...';
         if (state.spinFailed) {
@@ -1832,7 +1783,7 @@
           turnSubtext.textContent = 'Could not load a player. Check your connection and retry.';
         }
       } else if (state.phase === 'SPINNING' || state.phase === 'LOADING') {
-        turnHeadline.className = 'text-sm sm:text-base font-black text-white';
+        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = state.phase === 'SPINNING' ? 'SPINNING PLAYER & YEAR...' : 'LOADING PLAYER...';
         turnSubtext.textContent = 'Pulling season stats & positions...';
       } else if (state.phase === 'BIDDING') {
@@ -1840,13 +1791,15 @@
         const maxBid = getMaxBidForPlayer(bidder);
         const minBid = state.currentBid + 1;
 
-        turnHeadline.className = `text-sm sm:text-base font-black ${bidder === 1 ? 'text-red-400' : 'text-blue-400'}`;
+        turnHeadline.className = `text-xl sm:text-2xl font-black leading-tight truncate ${bidder === 1 ? 'text-red-400' : 'text-blue-400'}`;
         turnHeadline.textContent = `${getPlayerName(bidder).toUpperCase()}'S BID`;
 
         if (state.currentBid === 0) {
-          turnSubtext.textContent = `No bids yet • Budget: $${state.budgets[bidder]} (Max Bid: $${maxBid})`;
+          turnSubtext.textContent = state.passedAtZero
+            ? `${getPlayerName(state.openingBidder)} passed • If you pass too, they get him for $1 • Your max bid: $${maxBid}`
+            : `No bids yet • Your max bid: $${maxBid}`;
         } else {
-          turnSubtext.textContent = `High Bid: $${state.currentBid} (${getPlayerName(state.highBidder)}) • Your Max: $${maxBid}`;
+          turnSubtext.textContent = `High bid: $${state.currentBid} (${getPlayerName(state.highBidder)}) • Your max bid: $${maxBid}`;
         }
 
         bidControls.classList.remove('hidden');
@@ -1876,7 +1829,7 @@
         customBtn.disabled = minBid > maxBid;
       } else if (state.phase === 'COMPLETE') {
         roundPill.textContent = 'AUCTION COMPLETE';
-        turnHeadline.className = 'text-sm sm:text-base font-black text-emerald-400';
+        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-emerald-400';
         turnHeadline.textContent = 'BOTH LINEUPS ARE SET!';
         turnSubtext.textContent = 'Rearrange your players if you like, then simulate the series.';
         btnReveal.classList.remove('hidden');
@@ -1897,7 +1850,7 @@
         const p = cand.player;
         badges.innerHTML = p.positions
           .map((pos, idx) =>
-            `<span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-extrabold ${
+            `<span class="px-1.5 py-px rounded-md font-mono text-[10px] font-extrabold ${
               idx === 0 ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-900 border border-zinc-700 text-zinc-300'
             }">${pos}</span>`
           )
@@ -1909,11 +1862,11 @@
         }
 
         if (state.currentBid === 0) {
-          chip.className = 'inline-block mt-2 px-2.5 py-1 rounded-lg border border-zinc-700 bg-zinc-900 font-mono text-[11px] font-black text-zinc-300';
+          chip.className = 'shrink-0 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 font-mono text-xs font-black text-zinc-300';
           chip.textContent = 'NO BIDS YET';
         } else {
           const red = state.highBidder === 1;
-          chip.className = `inline-block mt-2 px-2.5 py-1 rounded-lg border font-mono text-[11px] font-black ${
+          chip.className = `shrink-0 px-3 py-1.5 rounded-lg border font-mono text-xs font-black ${
             red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
           }`;
           chip.textContent = `HIGH BID: ${getPlayerName(state.highBidder)} • $${state.currentBid}`;
@@ -1921,7 +1874,7 @@
         chip.classList.remove('hidden');
       } else if (state.phase === 'READY_TO_SPIN' && state.lastSale) {
         const red = state.lastSale.winner === 1;
-        chip.className = `inline-block mt-2 px-2.5 py-1 rounded-lg border font-mono text-[11px] font-black ${
+        chip.className = `shrink-0 px-3 py-1.5 rounded-lg border font-mono text-xs font-black ${
           red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
         }`;
         chip.textContent = `SOLD: ${getPlayerName(state.lastSale.winner)} • $${state.lastSale.price}`;
@@ -1951,7 +1904,7 @@
         const slotEl = document.createElement('div');
         slotEl.dataset.playerNum = String(playerNum);
         slotEl.dataset.pos = pos;
-        slotEl.className = `flex items-center gap-2.5 min-h-[64px] p-2.5 rounded-2xl border transition-all ${
+        slotEl.className = `flex items-center gap-2 h-full min-h-[38px] px-2 py-0.5 rounded-xl border transition-all ${
           occupant
             ? 'bg-zinc-950 border-zinc-700'
             : 'bg-zinc-950/50 border-dashed border-zinc-800'
@@ -1971,21 +1924,19 @@
 
         if (!occupant) {
           slotEl.innerHTML = `
-            <div class="w-10 h-10 rounded-xl border font-mono text-xs font-black flex items-center justify-center shrink-0 ${posBadgeClass}">
+            <div class="w-8 h-8 rounded-lg border font-mono text-[11px] font-black flex items-center justify-center shrink-0 ${posBadgeClass}">
               ${pos}
             </div>
-            <div class="text-xs font-bold uppercase tracking-wider text-zinc-600">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-600">
               Empty ${pos} Slot
             </div>
           `;
         } else {
-          const subLine = `${occupant.seasonLabel} ${occupant.teamAbbr} • ${positionsLabel(occupant)}`;
-          const statLine = state.statVisibility === 'visible'
-            ? `<div class="text-[11px] font-mono text-zinc-500 truncate">${occupant.pts.toFixed(1)} / ${occupant.reb.toFixed(1)} / ${occupant.ast.toFixed(1)}</div>`
-            : '';
+          const subLine = `${occupant.seasonLabel} ${occupant.teamAbbr} • ${positionsLabel(occupant)}` +
+            (state.statVisibility === 'visible' ? ` • ${occupant.pts.toFixed(1)}/${occupant.reb.toFixed(1)}/${occupant.ast.toFixed(1)}` : '');
 
           slotEl.innerHTML = `
-            <div class="w-10 h-10 rounded-xl border font-mono text-xs font-black flex items-center justify-center shrink-0 ${posBadgeClass}">
+            <div class="w-8 h-8 rounded-lg border font-mono text-[11px] font-black flex items-center justify-center shrink-0 ${posBadgeClass}">
               ${pos}
             </div>
             <div class="filled-draggable flex-1 min-w-0 flex items-center gap-2.5 cursor-grab active:cursor-grabbing">
@@ -1995,14 +1946,13 @@
                 draggable="false"
                 onerror="pfpFallback(this)"
                 onload="pfpCheck(this)"
-                class="w-10 h-10 rounded-xl object-cover bg-zinc-900 border border-zinc-700 shrink-0"
+                class="w-8 h-8 rounded-lg object-cover bg-zinc-900 border border-zinc-700 shrink-0"
               />
               <div class="min-w-0 flex-1">
-                <div class="text-xs sm:text-sm font-extrabold text-white truncate">${escapeHtml(occupant.name)}</div>
-                <div class="text-[11px] font-mono text-zinc-400 truncate">${escapeHtml(subLine)}</div>
-                ${statLine}
+                <div class="text-xs font-extrabold text-white leading-tight truncate">${escapeHtml(occupant.name)}</div>
+                <div class="text-[10px] font-mono text-zinc-400 leading-tight truncate">${escapeHtml(subLine)}</div>
               </div>
-              <span class="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-[11px] font-black text-emerald-400 shrink-0">
+              <span class="px-2 py-0.5 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-sm font-black text-emerald-400 shrink-0">
                 $${occupant.pricePaid}
               </span>
             </div>
@@ -2113,6 +2063,7 @@
       const r2 = calculateTeamProjection(2);
       const series = computeSevenGameSeries(r1, r2);
 
+      setDraftMode(false);
       $('draft-screen').classList.add('hidden');
       $('results-screen').classList.remove('hidden');
 
@@ -2130,9 +2081,19 @@
         winnerTitle.textContent = `${state.p2Name.toUpperCase()} WINS SERIES ${series.p2Games}-${series.p1Games}!`;
       }
 
-      $('score-pill-p1').textContent = `${state.p1Name}: ${series.p1Games} (${r1.rawWins.toFixed(1)} W)`;
-      $('score-pill-p2').textContent = `${state.p2Name}: ${series.p2Games} (${r2.rawWins.toFixed(1)} W)`;
-      $('series-diff-sub').textContent = `Projected win margin: ${series.diff.toFixed(1)}`;
+      $('score-pill-p1').textContent = `${state.p1Name}: ${series.p1Games}`;
+      $('score-pill-p2').textContent = `${state.p2Name}: ${series.p2Games}`;
+
+      // A near-dead-even matchup gets a game-7 moment for the winning side's leading scorer
+      const banner = $('clutch-banner');
+      if (series.diff < 1) {
+        const winnerCalc = series.winner === 1 ? r1 : r2;
+        const star = winnerCalc.breakdown.map((r) => r.player).filter(Boolean).sort((a, b) => b.pts - a.pts)[0];
+        banner.textContent = `${star.name} game 7 buzzer-beating game winner!`;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
 
       renderResultBreakdown(1, r1, series.p1Games);
       renderResultBreakdown(2, r2, series.p2Games);
@@ -2140,7 +2101,7 @@
 
     function renderResultBreakdown(playerNum, calc, seriesGames) {
       $(`res-p${playerNum}-heading`).textContent = getPlayerName(playerNum);
-      $(`res-p${playerNum}-sub`).textContent = `Proj. Wins: ${calc.rawWins.toFixed(1)} | Spent: $${calc.totalSpent} / $${STARTING_BUDGET}`;
+      $(`res-p${playerNum}-sub`).textContent = `Spent: $${calc.totalSpent} / $${STARTING_BUDGET}`;
       $(`res-p${playerNum}-wins-badge`).textContent = `${seriesGames} ${seriesGames === 1 ? 'GAME' : 'GAMES'}`;
 
       const tbody = $(`res-p${playerNum}-tbody`);
@@ -2198,6 +2159,8 @@
       setHeadshot($('wheel-player-img'), null);
       updateEstCountdowns();
       setInterval(updateEstCountdowns, 1000);
+      updateChromeHeight();
+      window.addEventListener('resize', updateChromeHeight);
       topUpSeasonQueue();                                // start loading the first season while still on the setup screen
     }
 
