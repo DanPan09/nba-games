@@ -1796,7 +1796,7 @@
 
         if (state.currentBid === 0) {
           turnSubtext.textContent = state.passedAtZero
-            ? `${getPlayerName(state.openingBidder)} passed • If you pass too, they get him for $1 • Your max bid: $${maxBid}`
+            ? `${getPlayerName(state.openingBidder)} passed • Your max bid: $${maxBid}`
             : `No bids yet • Your max bid: $${maxBid}`;
         } else {
           turnSubtext.textContent = `High bid: $${state.currentBid} (${getPlayerName(state.highBidder)}) • Your max bid: $${maxBid}`;
