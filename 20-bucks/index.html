@@ -84,6 +84,9 @@
       body.draft-active #draft-rosters { flex: 1 1 0; min-height: 0; }
     }
 
+    #input-custom-bid::-webkit-outer-spin-button, #input-custom-bid::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #input-custom-bid { -moz-appearance: textfield; appearance: textfield; }
+
     .slot-drop-target {
       border-color: rgba(212, 212, 216, 0.55) !important;
       background: rgba(255, 255, 255, 0.05) !important;
@@ -318,6 +321,15 @@
             <p><strong class="text-zinc-200">$20 Auction Format:</strong> Both managers start with $20 to bid on 10 random players until both 5-man lineups are full ($1 minimum per open roster spot). If both managers pass, the one who opened the bidding gets the player for $1.</p>
           </div>
 
+          <label for="toggle-hotkeys" class="flex items-center justify-end gap-2.5 mb-5 -mt-2 cursor-pointer select-none">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Enable Hotkeys</span>
+            <span class="relative inline-flex items-center">
+              <input id="toggle-hotkeys" type="checkbox" class="sr-only peer" />
+              <span class="w-9 h-5 rounded-full bg-zinc-700 peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-white/60 transition-colors"></span>
+              <span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></span>
+            </span>
+          </label>
+
           <button
             onclick="startGame()"
             class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-black text-sm sm:text-base tracking-wide uppercase shadow-lg transition-all"
@@ -330,9 +342,9 @@
         <section id="draft-screen" class="hidden w-full space-y-2 animate-pop">
 
           <!-- Spin cards: the player (red, with headshot) + the season (blue) -->
-          <div class="grid grid-cols-3 gap-2.5 shrink-0">
+          <div class="flex items-stretch justify-center gap-2.5 shrink-0">
 
-            <div id="wheel-player-card" class="col-span-2 bg-zinc-950 border-2 border-red-500/80 rounded-xl px-3 py-1.5 shadow-lg shadow-red-950/25 flex items-center gap-3 min-w-0">
+            <div id="wheel-player-card" class="flex-1 max-w-[440px] bg-zinc-950 border-2 border-red-500/80 rounded-xl px-3 py-1.5 shadow-lg shadow-red-950/25 flex items-center gap-3 min-w-0">
               <img id="wheel-player-img" alt="" class="w-12 h-12 rounded-xl object-cover bg-zinc-900 border-2 border-zinc-700 shrink-0" />
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 leading-none">
@@ -340,18 +352,15 @@
                   <div id="wheel-player-badges" class="flex items-center gap-1"></div>
                 </div>
                 <div id="wheel-player-val" class="text-lg font-black tracking-tight text-white leading-snug truncate">???</div>
-                <div class="flex items-center gap-2 min-w-0">
-                  <div id="wheel-player-sub" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 truncate">Spinning for a random player</div>
-                  <div id="wheel-player-stats" class="hidden text-[10px] font-mono text-zinc-300 truncate"></div>
-                </div>
+                <div id="wheel-player-sub" class="min-h-[14px] text-[10px] font-bold uppercase tracking-wider text-zinc-400 truncate"></div>
+                <div id="wheel-player-stats" class="hidden text-[10px] font-mono text-zinc-300 truncate"></div>
               </div>
               <div id="wheel-bid-chip" class="hidden"></div>
             </div>
 
-            <div id="wheel-year-card" class="bg-zinc-950 border-2 border-blue-500/80 rounded-xl px-3 py-1.5 text-center shadow-lg shadow-blue-950/25 flex flex-col items-center justify-center">
+            <div id="wheel-year-card" class="w-40 shrink-0 bg-zinc-950 border-2 border-blue-500/80 rounded-xl px-3 py-1.5 text-center shadow-lg shadow-blue-950/25 flex flex-col items-center justify-center">
               <div class="text-[10px] font-black uppercase tracking-widest text-blue-400">YEAR</div>
-              <div id="wheel-year-val" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none my-0.5">???</div>
-              <div id="wheel-year-sub" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Spinning random season</div>
+              <div id="wheel-year-val" class="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none my-0.5 whitespace-nowrap">???</div>
             </div>
 
           </div>
@@ -362,7 +371,7 @@
               <span id="round-pill" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 font-mono text-sm font-extrabold text-white shrink-0">LOT 1 / 10</span>
               <div class="min-w-0">
                 <div id="turn-headline" class="text-xl sm:text-2xl font-black text-red-400 leading-tight truncate">PLAYER 1'S BID</div>
-                <div id="turn-subtext" class="text-sm text-zinc-300 font-medium leading-snug">Spinning for a random player...</div>
+                <div id="turn-subtext" class="hidden text-sm text-zinc-300 font-medium leading-snug"></div>
               </div>
             </div>
 
@@ -420,7 +429,6 @@
 
           </div>
 
-          <div class="text-[10px] text-zinc-500 text-center shrink-0">Drag players (or tap one, then tap another slot) to rearrange your lineups.</div>
         </section>
 
         <!-- SCREEN 3: RESULTS & 7-GAME SERIES OUTCOME -->
@@ -950,6 +958,7 @@
       passedAtZero: false,
       lastSale: null,               // { winner, price } of the lot just sold
       spinDelayMs: 480,
+      hotkeysEnabled: false,
       seasonRosterCache: new Map(), // "teamId-year" -> roster
       seasonQueue: [],              // look-ahead: next team-season already loading while a lot is bid on
       usedSeasonKeys: new Set(),    // team-seasons already drawn this game
@@ -1414,6 +1423,8 @@
       state.p2Name = $('input-p2-name').value.trim() || 'Player 2';
       state.seasonPool = $('select-season-pool').value;
       state.statVisibility = $('select-stat-visibility').value;
+      state.hotkeysEnabled = $('toggle-hotkeys').checked;
+      safeSetStorage('bkc_20_bucks_hotkeys', state.hotkeysEnabled ? '1' : '0');
 
       updateEraLabel();
       topUpSeasonQueue();
@@ -1470,9 +1481,8 @@
 
     function resetWheelDisplay() {
       $('wheel-player-val').textContent = '???';
-      $('wheel-player-sub').textContent = 'Spinning for a random player';
+      $('wheel-player-sub').textContent = '';
       $('wheel-year-val').textContent = '???';
-      $('wheel-year-sub').textContent = 'Spinning random season';
       setHeadshot($('wheel-player-img'), null);
     }
 
@@ -1529,14 +1539,12 @@
       const playerVal = $('wheel-player-val');
       const playerSub = $('wheel-player-sub');
       const yearVal = $('wheel-year-val');
-      const yearSub = $('wheel-year-sub');
       const img = $('wheel-player-img');
       const spinEls = [playerVal, yearVal, img];
 
       setHeadshot(img, null);
       spinEls.forEach((e) => e.classList.add('wheel-spinning'));
-      playerSub.textContent = 'Spinning players...';
-      yearSub.textContent = 'Spinning seasons...';
+      playerSub.textContent = '';
 
       // The season being loaded is usually ready already (it loaded while the last lot was being bid on)
       let entry = takeNextSeason();
@@ -1582,8 +1590,7 @@
         state.phase = 'READY_TO_SPIN';
         playerVal.textContent = '???';
         yearVal.textContent = '???';
-        playerSub.textContent = 'Spinning for a random player';
-        yearSub.textContent = 'Spinning random season';
+        playerSub.textContent = '';
         showToast(`Couldn't load a player.${state.spinFailed ? '' : ' Re-spinning...'}`);
         renderAll();
         return;
@@ -1601,7 +1608,6 @@
       playerVal.textContent = player.name;
       playerSub.textContent = chosen.era.name;
       yearVal.textContent = seasonLabel;
-      yearSub.textContent = 'Regular Season';
       setHeadshot(img, player.headshot);
 
       state.openingBidder = state.lotNumber % 2 === 1 ? state.startingOpener : (state.startingOpener === 1 ? 2 : 1);
@@ -1662,9 +1668,32 @@
     }
 
     function submitCustomBid() {
-      const val = parseInt($('input-custom-bid').value, 10);
+      const input = $('input-custom-bid');
+      const val = parseInt(input.value, 10);
       if (Number.isNaN(val)) return;
+      input.blur();                                      // keep keyboard shortcuts usable afterwards
       placeBidAmount(val);
+    }
+
+    // Red: "1" raises by $1, "Q" passes.  Blue: "=" raises by $1, "-" passes.  Only the manager on the clock acts.
+    const HOTKEYS = {
+      '1': { manager: 1, action: 'raise' }, q: { manager: 1, action: 'pass' },
+      '=': { manager: 2, action: 'raise' }, '+': { manager: 2, action: 'raise' }, '-': { manager: 2, action: 'pass' }
+    };
+
+    function handleHotkey(e) {
+      if (!state.hotkeysEnabled || state.phase !== 'BIDDING' || !state.currentCandidate) return;
+      if ($('draft-screen').classList.contains('hidden')) return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+
+      const hk = HOTKEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+      if (!hk) return;
+      e.preventDefault();
+      if (state.activeBidder !== hk.manager) return;
+      if (hk.action === 'raise') submitQuickBid(1);
+      else passBid();
     }
 
     function passBid() {
@@ -1770,22 +1799,23 @@
       bidControls.classList.add('hidden');
       btnRespin.classList.add('hidden');
       btnReveal.classList.add('hidden');
+      turnSubtext.textContent = '';
+      turnSubtext.classList.add('hidden');
 
       roundPill.textContent = `LOT ${state.lotNumber} / ${state.maxLots}`;
 
       if (state.phase === 'READY_TO_SPIN') {
         turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = `NEXT UP: LOT #${state.lotNumber}`;
-        turnSubtext.textContent = 'Spinning for a random player...';
         if (state.spinFailed) {
           btnRespin.textContent = 'Retry Spin';
           btnRespin.classList.remove('hidden');
           turnSubtext.textContent = 'Could not load a player. Check your connection and retry.';
+          turnSubtext.classList.remove('hidden');
         }
       } else if (state.phase === 'SPINNING' || state.phase === 'LOADING') {
         turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = state.phase === 'SPINNING' ? 'SPINNING PLAYER & YEAR...' : 'LOADING PLAYER...';
-        turnSubtext.textContent = 'Pulling season stats & positions...';
       } else if (state.phase === 'BIDDING') {
         const bidder = state.activeBidder;
         const maxBid = getMaxBidForPlayer(bidder);
@@ -1793,14 +1823,6 @@
 
         turnHeadline.className = `text-xl sm:text-2xl font-black leading-tight truncate ${bidder === 1 ? 'text-red-400' : 'text-blue-400'}`;
         turnHeadline.textContent = `${getPlayerName(bidder).toUpperCase()}'S BID`;
-
-        if (state.currentBid === 0) {
-          turnSubtext.textContent = state.passedAtZero
-            ? `${getPlayerName(state.openingBidder)} passed • Your max bid: $${maxBid}`
-            : `No bids yet • Your max bid: $${maxBid}`;
-        } else {
-          turnSubtext.textContent = `High bid: $${state.currentBid} (${getPlayerName(state.highBidder)}) • Your max bid: $${maxBid}`;
-        }
 
         bidControls.classList.remove('hidden');
 
@@ -1831,7 +1853,6 @@
         roundPill.textContent = 'AUCTION COMPLETE';
         turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-emerald-400';
         turnHeadline.textContent = 'BOTH LINEUPS ARE SET!';
-        turnSubtext.textContent = 'Rearrange your players if you like, then simulate the series.';
         btnReveal.classList.remove('hidden');
       }
     }
@@ -1861,31 +1882,26 @@
           stats.classList.remove('hidden');
         }
 
-        if (state.currentBid === 0) {
-          chip.className = 'shrink-0 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 font-mono text-xs font-black text-zinc-300';
-          chip.textContent = 'NO BIDS YET';
-        } else {
-          const red = state.highBidder === 1;
-          chip.className = `shrink-0 px-3 py-1.5 rounded-lg border font-mono text-xs font-black ${
-            red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
-          }`;
-          chip.textContent = `HIGH BID: ${getPlayerName(state.highBidder)} • $${state.currentBid}`;
-        }
-        chip.classList.remove('hidden');
+        if (state.currentBid > 0) showChip('HIGH BID', state.highBidder, `$${state.currentBid} • ${getPlayerName(state.highBidder)}`);
       } else if (state.phase === 'READY_TO_SPIN' && state.lastSale) {
-        const red = state.lastSale.winner === 1;
-        chip.className = `shrink-0 px-3 py-1.5 rounded-lg border font-mono text-xs font-black ${
-          red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
-        }`;
-        chip.textContent = `SOLD: ${getPlayerName(state.lastSale.winner)} • $${state.lastSale.price}`;
-        chip.classList.remove('hidden');
+        showChip('SOLD', state.lastSale.winner, `${getPlayerName(state.lastSale.winner)} • $${state.lastSale.price}`);
       } else if (state.phase === 'COMPLETE') {
         $('wheel-player-val').textContent = 'ALL SOLD!';
-        $('wheel-player-sub').textContent = 'Both 5-man lineups are full';
+        $('wheel-player-sub').textContent = '';
         $('wheel-year-val').textContent = '—';
-        $('wheel-year-sub').textContent = 'Auction complete';
         setHeadshot($('wheel-player-img'), null);
       }
+    }
+
+    // Small two-line tag on the player card, tinted for the manager it refers to
+    function showChip(label, managerNum, text) {
+      const chip = $('wheel-bid-chip');
+      const red = managerNum === 1;
+      chip.className = `shrink-0 max-w-[150px] px-2.5 py-1 rounded-lg border font-mono text-center ${
+        red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
+      }`;
+      chip.innerHTML = `<div class="text-[9px] font-black tracking-widest opacity-80 leading-tight">${label}</div>` +
+        `<div class="text-sm font-black leading-tight truncate">${escapeHtml(text)}</div>`;
     }
 
     function positionsLabel(p) { return p.positions.join(' / '); }
@@ -1904,7 +1920,7 @@
         const slotEl = document.createElement('div');
         slotEl.dataset.playerNum = String(playerNum);
         slotEl.dataset.pos = pos;
-        slotEl.className = `flex items-center gap-2 h-full min-h-[38px] px-2 py-0.5 rounded-xl border transition-all ${
+        slotEl.className = `flex items-center gap-2 h-full min-h-[34px] px-2 py-0.5 rounded-xl border transition-all ${
           occupant
             ? 'bg-zinc-950 border-zinc-700'
             : 'bg-zinc-950/50 border-dashed border-zinc-800'
@@ -2157,6 +2173,10 @@
       if (savedP1) $('input-p1-name').value = savedP1;
       if (savedP2) $('input-p2-name').value = savedP2;
       setHeadshot($('wheel-player-img'), null);
+      $('toggle-hotkeys').checked = safeGetStorage('bkc_20_bucks_hotkeys') === '1';
+      state.hotkeysEnabled = $('toggle-hotkeys').checked;
+      $('toggle-hotkeys').addEventListener('change', (e) => { state.hotkeysEnabled = e.target.checked; });
+      document.addEventListener('keydown', handleHotkey);
       updateEstCountdowns();
       setInterval(updateEstCountdowns, 1000);
       updateChromeHeight();
