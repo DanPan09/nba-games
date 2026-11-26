@@ -318,7 +318,7 @@
 
           <!-- Rules Summary -->
           <div class="bg-zinc-950/80 border border-zinc-800/90 rounded-2xl p-4 text-xs text-zinc-400 space-y-1.5 mb-6">
-            <p><strong class="text-zinc-200">$20 Auction Format:</strong> Both managers start with $20 to bid on 10 random players until both 5-man lineups are full ($1 minimum per open roster spot). If both managers pass, the one who opened the bidding gets the player for $1.</p>
+            <p><strong class="text-zinc-200">$20 Auction Format:</strong> Both managers start with $20 to bid on 10 random players until both 5-man lineups are full ($1 minimum per open roster spot). If one manager passes and the other bids, the bidder wins the player. If both pass, the one who opened the bidding gets him for $1.</p>
           </div>
 
           <label for="toggle-hotkeys" class="flex items-center justify-end gap-2.5 mb-5 -mt-2 cursor-pointer select-none">
@@ -366,32 +366,37 @@
           </div>
 
           <!-- Auction status & bidding bar -->
-          <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col lg:flex-row items-center justify-between gap-3 shrink-0">
+          <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center min-[1340px]:justify-between gap-x-3 gap-y-2 shrink-0">
             <div class="flex items-center gap-3 min-w-0">
               <span id="round-pill" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 font-mono text-sm font-extrabold text-white shrink-0">LOT 1 / 10</span>
               <div class="min-w-0">
-                <div id="turn-headline" class="text-xl sm:text-2xl font-black text-red-400 leading-tight truncate">PLAYER 1'S BID</div>
+                <div id="turn-headline" class="text-xl min-[1340px]:text-2xl font-black text-red-400 leading-tight truncate max-w-[300px]">PLAYER 1'S BID</div>
                 <div id="turn-subtext" class="hidden text-sm text-zinc-300 font-medium leading-snug"></div>
               </div>
             </div>
 
+            <div id="bid-to-beat" class="hidden shrink-0 min-w-[92px] min-[1340px]:min-w-[104px] px-3 py-1 rounded-xl border-2 text-center transition-colors">
+              <div class="text-[10px] font-black uppercase tracking-widest opacity-80 leading-tight">Bid to beat</div>
+              <div id="bid-to-beat-value" class="text-2xl font-black font-mono leading-none">$0</div>
+            </div>
+
             <div id="bid-controls" class="hidden flex flex-wrap items-center justify-center gap-2 shrink-0">
               <button id="btn-bid-step1" onclick="submitQuickBid(1)"
-                class="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-35 disabled:cursor-not-allowed text-white font-mono font-black text-base shadow transition-all">Bid $1</button>
+                class="px-4 min-[1340px]:px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-35 disabled:cursor-not-allowed text-white font-mono font-black text-sm min-[1340px]:text-base shadow transition-all">Bid $1</button>
               <button id="btn-bid-step2" onclick="submitQuickBid(2)"
-                class="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-base transition-all">+$2</button>
+                class="px-4 min-[1340px]:px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-sm min-[1340px]:text-base transition-all">+$2</button>
               <button id="btn-bid-step5" onclick="submitQuickBid(5)"
-                class="px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-base transition-all">+$5</button>
+                class="px-4 min-[1340px]:px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed border border-zinc-700 text-white font-mono font-black text-sm min-[1340px]:text-base transition-all">+$5</button>
               <div class="inline-flex items-center rounded-xl bg-zinc-950 border border-zinc-600 overflow-hidden">
-                <span class="pl-3 pr-1 font-mono text-base font-black text-zinc-400">$</span>
+                <span class="pl-3 pr-1 font-mono text-sm min-[1340px]:text-base font-black text-zinc-400">$</span>
                 <input id="input-custom-bid" type="number" min="1" max="20" value="1"
                   onkeydown="if(event.key==='Enter') submitCustomBid()"
-                  class="w-16 py-3 bg-transparent font-mono text-base font-black text-white focus:outline-none" />
+                  class="w-12 min-[1340px]:w-16 py-3 bg-transparent font-mono text-sm min-[1340px]:text-base font-black text-white focus:outline-none" />
                 <button id="btn-bid-custom" onclick="submitCustomBid()"
                   class="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed text-sm font-black text-white uppercase border-l border-zinc-600 transition-all">Bid</button>
               </div>
               <button id="btn-pass-bid" onclick="passBid()"
-                class="px-6 py-3 rounded-xl bg-zinc-900 hover:bg-amber-600/20 border border-zinc-600 hover:border-amber-500/60 text-zinc-200 hover:text-amber-300 font-black text-base uppercase tracking-wider transition-all">Pass</button>
+                class="px-5 min-[1340px]:px-6 py-3 rounded-xl bg-zinc-900 hover:bg-amber-600/20 border border-zinc-600 hover:border-amber-500/60 text-zinc-200 hover:text-amber-300 font-black text-sm min-[1340px]:text-base uppercase tracking-wider transition-all">Pass</button>
             </div>
 
             <div class="flex items-center gap-2.5 shrink-0">
@@ -1645,11 +1650,19 @@
         return;
       }
 
+      const opponent = bidder === 1 ? 2 : 1;
+      const otherAlreadyPassed = state.passedAtZero;
+
       state.currentBid = amount;
       state.highBidder = bidder;
       state.passedAtZero = false;
 
-      const opponent = bidder === 1 ? 2 : 1;
+      // The other manager passed and this one bid: the bidder gets the player
+      if (otherAlreadyPassed) {
+        awardCurrentPlayer(bidder, amount, `${getPlayerName(opponent)} passed.`);
+        return;
+      }
+
       const opponentMax = getMaxBidForPlayer(opponent);
 
       // If the opponent cannot afford to outbid, the high bidder wins immediately
@@ -1712,7 +1725,7 @@
       if (!state.passedAtZero) {
         state.passedAtZero = true;
         state.activeBidder = other;
-        showToast(`${getPlayerName(passer)} passed — ${getPlayerName(other)} can take him for $1 or pass.`);
+        showToast(`${getPlayerName(passer)} passed — a bid from ${getPlayerName(other)} wins him.`);
         renderAll();
         return;
       }
@@ -1797,6 +1810,7 @@
 
       updateRosterGlow();
       bidControls.classList.add('hidden');
+      $('bid-to-beat').classList.add('hidden');
       btnRespin.classList.add('hidden');
       btnReveal.classList.add('hidden');
       turnSubtext.textContent = '';
@@ -1805,7 +1819,7 @@
       roundPill.textContent = `LOT ${state.lotNumber} / ${state.maxLots}`;
 
       if (state.phase === 'READY_TO_SPIN') {
-        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
+        turnHeadline.className = 'text-xl min-[1340px]:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = `NEXT UP: LOT #${state.lotNumber}`;
         if (state.spinFailed) {
           btnRespin.textContent = 'Retry Spin';
@@ -1814,17 +1828,25 @@
           turnSubtext.classList.remove('hidden');
         }
       } else if (state.phase === 'SPINNING' || state.phase === 'LOADING') {
-        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-white';
+        turnHeadline.className = 'text-xl min-[1340px]:text-2xl font-black leading-tight truncate text-white';
         turnHeadline.textContent = state.phase === 'SPINNING' ? 'SPINNING PLAYER & YEAR...' : 'LOADING PLAYER...';
       } else if (state.phase === 'BIDDING') {
         const bidder = state.activeBidder;
         const maxBid = getMaxBidForPlayer(bidder);
         const minBid = state.currentBid + 1;
 
-        turnHeadline.className = `text-xl sm:text-2xl font-black leading-tight truncate ${bidder === 1 ? 'text-red-400' : 'text-blue-400'}`;
+        turnHeadline.className = `text-xl min-[1340px]:text-2xl font-black leading-tight truncate ${bidder === 1 ? 'text-red-400' : 'text-blue-400'}`;
         turnHeadline.textContent = `${getPlayerName(bidder).toUpperCase()}'S BID`;
 
         bidControls.classList.remove('hidden');
+
+        const beat = $('bid-to-beat');
+        $('bid-to-beat-value').textContent = `$${state.currentBid}`;
+        beat.className = `shrink-0 min-w-[92px] min-[1340px]:min-w-[104px] px-3 py-1 rounded-xl border-2 text-center transition-colors ${
+          state.highBidder === 1 ? 'border-red-500/70 bg-red-500/10 text-red-300'
+            : state.highBidder === 2 ? 'border-blue-500/70 bg-blue-500/10 text-blue-300'
+            : 'border-zinc-600 bg-zinc-950 text-zinc-200'
+        }`;
 
         const b1 = $('btn-bid-step1');
         const b2 = $('btn-bid-step2');
@@ -1836,9 +1858,9 @@
         const target2 = state.currentBid === 0 ? 2 : state.currentBid + 2;
         const target5 = state.currentBid === 0 ? 5 : state.currentBid + 5;
 
-        b1.textContent = state.currentBid === 0 ? 'Bid $1' : `+$1 ($${target1})`;
-        b2.textContent = state.currentBid === 0 ? 'Bid $2' : `+$2 ($${target2})`;
-        b5.textContent = state.currentBid === 0 ? 'Bid $5' : `+$5 ($${target5})`;
+        b1.textContent = state.currentBid === 0 ? 'Bid $1' : '+$1';
+        b2.textContent = state.currentBid === 0 ? 'Bid $2' : '+$2';
+        b5.textContent = state.currentBid === 0 ? 'Bid $5' : '+$5';
 
         b1.disabled = target1 > maxBid;
         b2.disabled = target2 > maxBid;
@@ -1851,7 +1873,7 @@
         customBtn.disabled = minBid > maxBid;
       } else if (state.phase === 'COMPLETE') {
         roundPill.textContent = 'AUCTION COMPLETE';
-        turnHeadline.className = 'text-xl sm:text-2xl font-black leading-tight truncate text-emerald-400';
+        turnHeadline.className = 'text-xl min-[1340px]:text-2xl font-black leading-tight truncate text-emerald-400';
         turnHeadline.textContent = 'BOTH LINEUPS ARE SET!';
         btnReveal.classList.remove('hidden');
       }
@@ -1882,7 +1904,6 @@
           stats.classList.remove('hidden');
         }
 
-        if (state.currentBid > 0) showChip('HIGH BID', state.highBidder, `$${state.currentBid} • ${getPlayerName(state.highBidder)}`);
       } else if (state.phase === 'READY_TO_SPIN' && state.lastSale) {
         showChip('SOLD', state.lastSale.winner, `${getPlayerName(state.lastSale.winner)} • $${state.lastSale.price}`);
       } else if (state.phase === 'COMPLETE') {
@@ -1901,7 +1922,7 @@
         red ? 'border-red-500/50 bg-red-500/15 text-red-300' : 'border-blue-500/50 bg-blue-500/15 text-blue-300'
       }`;
       chip.innerHTML = `<div class="text-[9px] font-black tracking-widest opacity-80 leading-tight">${label}</div>` +
-        `<div class="text-sm font-black leading-tight truncate">${escapeHtml(text)}</div>`;
+        `<div class="text-sm font-black leading-tight truncate max-w-[300px]">${escapeHtml(text)}</div>`;
     }
 
     function positionsLabel(p) { return p.positions.join(' / '); }
@@ -1920,7 +1941,7 @@
         const slotEl = document.createElement('div');
         slotEl.dataset.playerNum = String(playerNum);
         slotEl.dataset.pos = pos;
-        slotEl.className = `flex items-center gap-2 h-full min-h-[34px] px-2 py-0.5 rounded-xl border transition-all ${
+        slotEl.className = `flex items-center gap-2 h-full min-h-[30px] px-2 py-0.5 rounded-xl border transition-all ${
           occupant
             ? 'bg-zinc-950 border-zinc-700'
             : 'bg-zinc-950/50 border-dashed border-zinc-800'
@@ -1965,8 +1986,8 @@
                 class="w-8 h-8 rounded-lg object-cover bg-zinc-900 border border-zinc-700 shrink-0"
               />
               <div class="min-w-0 flex-1">
-                <div class="text-xs font-extrabold text-white leading-tight truncate">${escapeHtml(occupant.name)}</div>
-                <div class="text-[10px] font-mono text-zinc-400 leading-tight truncate">${escapeHtml(subLine)}</div>
+                <div class="text-xs font-extrabold text-white leading-tight truncate max-w-[300px]">${escapeHtml(occupant.name)}</div>
+                <div class="text-[10px] font-mono text-zinc-400 leading-tight truncate max-w-[300px]">${escapeHtml(subLine)}</div>
               </div>
               <span class="px-2 py-0.5 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-sm font-black text-emerald-400 shrink-0">
                 $${occupant.pricePaid}
